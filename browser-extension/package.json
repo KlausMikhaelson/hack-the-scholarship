@@ -1,0 +1,13 @@
+{
+  "name": "browser-extension",
+  "version": "1.0.0",
+  "description": "Browser extension for HackTheScholarship",
+  "scripts": {
+    "build": "echo 'Build script - add your build process here'",
+    "watch": "echo 'Watch script - add your watch process here'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+

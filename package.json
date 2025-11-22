@@ -1,0 +1,21 @@
+{
+  "name": "hackthescholarship",
+  "version": "1.0.0",
+  "description": "Full-stack application with backend, Next.js frontend, and browser extension",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "browser-extension"
+  ],
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../browser-extension && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+
