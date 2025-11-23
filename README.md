@@ -53,7 +53,38 @@ npm run dev:frontend  # Frontend only
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express, Prisma, PostgreSQL
+- **Backend**: Node.js, Express, Prisma, PostgreSQL, Puppeteer (for scraping)
 - **Frontend**: Next.js, React, TailwindCSS
 - **Browser Extension**: Chrome/Edge Extension API
+
+## Scholarship Scraper
+
+The backend includes a scholarship scraper for ScholarshipsCanada.com.
+
+### Testing the Scraper
+
+1. **Via API endpoint** (async):
+   ```bash
+   curl http://localhost:3001/api/scraper/run
+   ```
+
+2. **Via API endpoint** (sync - waits for completion):
+   ```bash
+   curl http://localhost:3001/api/scraper/run-sync
+   ```
+
+3. **Via test script**:
+   ```bash
+   cd backend
+   node src/scripts/test-scraper.js
+   ```
+
+The scraped data will be saved to `backend/data/scholarships.json`.
+
+### Future: Cron Job Setup
+
+To set up as a cron job, you can:
+- Use `node-cron` package for in-process scheduling
+- Use system cron to call the API endpoint
+- Use a task scheduler service
 
