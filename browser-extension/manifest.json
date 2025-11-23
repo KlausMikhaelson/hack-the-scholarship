@@ -6,7 +6,9 @@
   "permissions": [
     "activeTab",
     "storage",
-    "identity"
+    "identity",
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://*.clerk.accounts.dev/*",

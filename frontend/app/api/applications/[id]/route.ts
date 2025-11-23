@@ -5,6 +5,28 @@ import { prisma } from '@/lib/prisma';
 // Force dynamic rendering to prevent Prisma from initializing during build
 export const dynamic = 'force-dynamic';
 
+// Helper function to check if profile is complete
+function checkProfileCompleteness(profile: any): boolean {
+  if (!profile) return false;
+  
+  // Required fields for a complete profile
+  const requiredFields = [
+    'gpa',
+    'major',
+    'extracurriculars',
+    'achievements',
+    'personalBackground',
+  ];
+  
+  // Check if all required fields are present and not empty
+  return requiredFields.every(field => {
+    const value = profile[field];
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string' && value.trim().length === 0) return false;
+    return true;
+  });
+}
+
 // PATCH - Update application (save edited essay)
 export async function PATCH(
   request: NextRequest,
@@ -94,9 +116,10 @@ export async function GET(
 
     const applicationId = params.id;
 
-    // Get user to verify ownership
+    // Get user with profile to verify ownership and check completeness
     const user = await prisma.user.findUnique({
       where: { clerkId: userId },
+      include: { profile: true },
     });
 
     if (!user) {
@@ -129,6 +152,10 @@ export async function GET(
       );
     }
 
+    // Check if profile is complete
+    const isProfileComplete = user.profile ? checkProfileCompleteness(user.profile) : false;
+    const readyToFill = isProfileComplete && !!application.generatedEssay && application.status !== 'SUBMITTED';
+
     // Format response
     const formatted = {
       id: application.id,
@@ -143,6 +170,8 @@ export async function GET(
       adaptiveWeights: application.adaptiveWeights as any,
       strengthMapping: application.strengthMapping as any,
       explainabilityMatrix: application.explainabilityMatrix as any,
+      readyToFill,
+      isProfileComplete,
     };
 
     return NextResponse.json({ application: formatted });

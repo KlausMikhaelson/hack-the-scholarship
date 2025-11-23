@@ -56,6 +56,13 @@ export default function ProfilePage() {
         const data = await response.json();
         const profile = data.profile;
         const user = data.user || {};
+        
+        // Check if profile exists
+        if (!profile) {
+          setError('Profile not found. Please complete onboarding first.');
+          setIsLoading(false);
+          return;
+        }
 
         // Populate form with fetched data (use API response for name/email, fallback to Clerk)
         reset({
