@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 // POST - Seed sample scholarships (for development/testing)
 export async function POST(request: NextRequest) {
   try {

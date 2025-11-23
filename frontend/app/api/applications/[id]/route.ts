@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering to prevent Prisma from initializing during build
+export const dynamic = 'force-dynamic';
+
 // PATCH - Update application (save edited essay)
 export async function PATCH(
   request: NextRequest,
