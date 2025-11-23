@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const signedOut = document.getElementById('signedOut');
   const signedIn = document.getElementById('signedIn');
   const loading = document.getElementById('loading');
+  const fillingForm = document.getElementById('fillingForm');
+  const progressFill = document.getElementById('progressFill');
+  const loadingSubtext = document.getElementById('loadingSubtext');
   const userName = document.getElementById('userName');
   const userEmail = document.getElementById('userEmail');
 
@@ -20,6 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
         checkAuthStatus();
       }, 200);
     }
+  });
+  
+  // Listen for progress updates from content script
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message && message.type === 'FILL_PROGRESS_UPDATE') {
+      if (window.updateFillProgress) {
+        window.updateFillProgress(message.percent, message.text);
+      }
+      sendResponse({ received: true });
+    }
+    return true;
   });
   
   // Check auth when popup regains focus (user might have signed in in another tab)
@@ -95,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (response && response.authenticated) {
         console.log('User is authenticated, loading user info...');
+        // Load user info and show signed-in state
+        // loadUserInfo will handle showing user data even if profile is missing
         await loadUserInfo();
         showSignedIn();
       } else {
@@ -103,17 +119,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      showSignedOut();
+      // On error, try to load user info anyway (might be a network issue)
+      // If it fails, show signed out
+      try {
+        await loadUserInfo();
+        showSignedIn();
+      } catch (loadError) {
+        console.error('Failed to load user info after auth check error:', loadError);
+        showSignedOut();
+      }
     }
   }
 
+  // Prevent multiple simultaneous getUserData calls
+  let isLoadingUserInfo = false;
+  let lastUserInfoLoad = 0;
+  const USER_INFO_CACHE_MS = 2000; // Cache user info for 2 seconds
+
   async function loadUserInfo() {
+    // Prevent duplicate calls within cache window
+    const now = Date.now();
+    if (isLoadingUserInfo || (now - lastUserInfoLoad < USER_INFO_CACHE_MS)) {
+      console.log('Skipping duplicate loadUserInfo call');
+      return;
+    }
+    
+    isLoadingUserInfo = true;
+    lastUserInfoLoad = now;
+    
     try {
       console.log('Loading user info...');
       const response = await sendMessage({ action: 'getUserData' });
       console.log('getUserData response:', response);
       
       if (response && response.data) {
+        // User data exists (even if profile doesn't)
         userName.textContent = response.data.name || 'User';
         userEmail.textContent = response.data.email || '';
         
@@ -124,10 +164,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         console.log('User info loaded successfully:', response.data.name, response.data.email);
+        
+        // Show a warning if profile is missing (user hasn't completed onboarding)
+        if (response.error && response.error.includes('Profile not found')) {
+          showStatus('Complete onboarding to enable form filling', 'info');
+        }
       } else if (response && response.error) {
-        console.error('Error loading user info:', response.error);
-        userName.textContent = 'User';
-        userEmail.textContent = '';
+        // Check if it's an auth error (should sign out) vs profile error (show user but warn)
+        if (response.error.includes('Authentication required') || response.error.includes('Not authenticated') || response.expired) {
+          console.error('Authentication error - token expired, clearing session');
+          // Clear session and show signed out state
+          // Show clear message that session expired
+          showSignedOut();
+          showStatus('Session expired. Please sign in again.', 'info');
+        } else {
+          // Profile error but user is authenticated - show user info anyway
+          console.warn('Profile error but user authenticated:', response.error);
+          // Try to get basic user info from Clerk token if possible
+          userName.textContent = 'User';
+          userEmail.textContent = '';
+          showStatus(response.error, 'info');
+        }
       } else {
         console.warn('No user data in response');
         userName.textContent = 'User';
@@ -137,6 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Failed to load user info:', error);
       userName.textContent = 'User';
       userEmail.textContent = '';
+    } finally {
+      isLoadingUserInfo = false;
     }
   }
 
@@ -194,19 +253,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function handleFillForm() {
     try {
-      showStatus('Filling form...', 'info');
+      // Show loading state
+      showFillingForm();
+      updateProgress(10, 'Analyzing form...');
       fillFormBtn.disabled = true;
       
       // Get active tab
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
       
-      // Send message to content script
-      chrome.tabs.sendMessage(currentTab.id, { action: 'fillForm' }, (response) => {
+      if (!currentTab) {
+        throw new Error('No active tab found');
+      }
+      
+      // Check if content script is ready by trying to ping it first
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(currentTab.id, { action: 'ping' }, (response) => {
+            if (chrome.runtime.lastError) {
+              // Content script might not be loaded, try to inject it
+              reject(new Error('Content script not ready'));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+      } catch (error) {
+        // Try to inject content script if not loaded
+        console.log('Content script not ready, attempting to inject...');
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: currentTab.id },
+            files: ['content/content.js']
+          });
+          // Wait a bit for script to initialize
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (injectError) {
+          console.error('Failed to inject content script:', injectError);
+          throw new Error('Failed to load extension on this page. Please refresh the page and try again.');
+        }
+      }
+      
+      // Set up a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
         fillFormBtn.disabled = false;
+        hideFillingForm();
+        showStatus('Operation timed out. Please try again.', 'error');
+      }, 60000); // 60 second timeout
+      
+      // Send message to content script with progress callback
+      chrome.tabs.sendMessage(currentTab.id, { action: 'fillFormWithAI' }, async (response) => {
+        clearTimeout(timeoutId);
+        fillFormBtn.disabled = false;
+        hideFillingForm();
         
         if (chrome.runtime.lastError) {
-          showStatus('Failed to fill form. Make sure you\'re on a page with a form.', 'error');
+          console.error('Runtime error:', chrome.runtime.lastError);
+          showStatus(`Failed to fill form: ${chrome.runtime.lastError.message}`, 'error');
+          return;
+        }
+        
+        if (!response) {
+          showStatus('No response from content script. Please try again.', 'error');
           return;
         }
         
@@ -219,9 +327,34 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Fill form failed:', error);
       fillFormBtn.disabled = false;
-      showStatus('Failed to fill form', 'error');
+      hideFillingForm();
+      showStatus(error.message || 'Failed to fill form', 'error');
     }
   }
+
+  function showFillingForm() {
+    fillingForm.style.display = 'block';
+    signedIn.style.display = 'none';
+    signedOut.style.display = 'none';
+    loading.style.display = 'none';
+  }
+
+  function hideFillingForm() {
+    fillingForm.style.display = 'none';
+    signedIn.style.display = 'block';
+  }
+
+  function updateProgress(percent, text) {
+    if (progressFill) {
+      progressFill.style.width = `${percent}%`;
+    }
+    if (loadingSubtext) {
+      loadingSubtext.textContent = text;
+    }
+  }
+
+  // Expose updateProgress to window for content script to call
+  window.updateFillProgress = updateProgress;
 
   function showLoading() {
     loading.style.display = 'block';

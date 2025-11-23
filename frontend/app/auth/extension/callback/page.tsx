@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 
 // Prevent static generation - this page requires client-side auth
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 function CallbackContent() {
   const { getToken, isLoaded } = useAuth();
+  const { user } = useUser();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect_url');
   const [status, setStatus] = useState('Authenticating...');
@@ -34,18 +35,30 @@ function CallbackContent() {
           if (extensionIdMatch) {
             const extensionId = extensionIdMatch[1];
             
+            // Get user email and clerkId
+            const userEmail = user?.emailAddresses?.[0]?.emailAddress || null;
+            const clerkId = user?.id || null;
+            
             // Try multiple methods to send token to extension
             // Method 1: Direct postMessage (for content script)
             window.postMessage({
               type: 'CLERK_EXTENSION_AUTH',
               token: token,
-              extensionId: extensionId
+              extensionId: extensionId,
+              clerkId: clerkId,
+              email: userEmail
             }, window.location.origin);
             
             // Method 2: Store in localStorage temporarily (content script can read it)
             try {
               localStorage.setItem('extensionAuthToken', token);
               localStorage.setItem('extensionAuthTimestamp', Date.now().toString());
+              if (clerkId) {
+                localStorage.setItem('extensionAuthClerkId', clerkId);
+              }
+              if (userEmail) {
+                localStorage.setItem('extensionAuthEmail', userEmail);
+              }
             } catch (e) {
               console.error('Failed to store token in localStorage:', e);
             }
@@ -70,7 +83,7 @@ function CallbackContent() {
     }
 
     handleCallback();
-  }, [getToken, isLoaded, redirectUrl]);
+  }, [getToken, isLoaded, redirectUrl, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">

@@ -74,7 +74,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
               <p className="text-gray-500">{!authLoaded ? 'Loading authentication...' : 'Loading dashboard...'}</p>
             </div>
           </div>
@@ -85,12 +85,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-800 font-medium mb-2">Error loading dashboard</p>
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center shadow-sm">
+            <p className="text-red-800 font-semibold mb-2">Error loading dashboard</p>
+            <p className="text-red-600 text-sm mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm hover:shadow-md"
             >
               Retry
             </button>
@@ -103,40 +103,48 @@ export default function DashboardPage() {
     <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-3xl font-bold text-[#111] mb-2">Dashboard</h1>
-          <p className="text-gray-500">Welcome back! Here&apos;s your scholarship application overview.</p>
+          <h1 className="text-4xl font-bold text-[#111] mb-3">Dashboard</h1>
+          <p className="text-lg text-gray-600">Welcome back! Here&apos;s your scholarship application overview.</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-500">Total Applications</p>
-              <FileText className="w-4 h-4 text-gray-400" />
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Total Applications</p>
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
+                <FileText className="w-5 h-5 text-gray-600" />
+              </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{stats.totalApplications}</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-500">In Progress</p>
-              <TrendingUp className="w-4 h-4 text-blue-500" />
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">In Progress</p>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl flex items-center justify-center border border-blue-100">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{stats.inProgress}</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-500">Submitted</p>
-              <Award className="w-4 h-4 text-green-500" />
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Submitted</p>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center border border-emerald-100">
+                <Award className="w-5 h-5 text-emerald-600" />
+              </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{stats.submitted}</p>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-500">Available</p>
-              <Award className="w-4 h-4 text-gray-400" />
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Available</p>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl flex items-center justify-center border border-amber-100">
+                <Award className="w-5 h-5 text-amber-600" />
+              </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{stats.scholarshipsAvailable}</p>
           </div>
@@ -146,44 +154,47 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-2 gap-6 mb-12">
           <Link
             href="/scholarships"
-            className="group bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-8 shadow-sm transition-all"
+            className="group bg-[#111] hover:bg-[#1a1a1a] text-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xl font-semibold">Browse Scholarships</h3>
-              <Award className="w-6 h-6" />
+              <h3 className="text-xl font-bold">Browse Scholarships</h3>
+              <Award className="w-6 h-6 group-hover:scale-110 transition-transform" />
             </div>
-            <p className="text-blue-100 text-sm">Find and apply to new scholarship opportunities</p>
+            <p className="text-gray-300 text-sm">Find and apply to new scholarship opportunities</p>
           </Link>
 
           <Link
             href="/applications"
-            className="group bg-white hover:bg-gray-50 border border-gray-200 rounded-xl p-8 shadow-sm transition-all"
+            className="group bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xl font-semibold text-gray-900">My Applications</h3>
-              <FileText className="w-6 h-6 text-gray-600" />
+              <h3 className="text-xl font-bold text-gray-900">My Applications</h3>
+              <FileText className="w-6 h-6 text-gray-600 group-hover:scale-110 transition-transform" />
             </div>
-            <p className="text-gray-500 text-sm">View and manage your ongoing applications</p>
+            <p className="text-gray-600 text-sm">View and manage your ongoing applications</p>
           </Link>
         </div>
 
         {/* Recent Applications */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-[#111]">Recent Applications</h2>
-            <Link href="/applications" className="text-sm text-blue-600 hover:text-blue-700">
+            <h2 className="text-xl font-bold text-[#111]">Recent Applications</h2>
+            <Link href="/applications" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
               View all →
             </Link>
           </div>
 
           <div className="space-y-3">
             {recentApplications.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No applications yet</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
+                  <FileText className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-600 font-medium mb-1">No applications yet</p>
+                <p className="text-gray-500 text-sm mb-4">Start applying to scholarships to see them here</p>
                 <Link
                   href="/scholarships"
-                  className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-700"
+                  className="inline-block px-6 py-2 bg-[#111] text-white rounded-xl hover:bg-[#1a1a1a] transition-all shadow-sm hover:shadow-md text-sm font-medium"
                 >
                   Browse scholarships →
                 </Link>
@@ -193,16 +204,16 @@ export default function DashboardPage() {
                 <Link
                   key={app.id}
                   href={`/applications/${app.id}`}
-                  className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-5 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all group"
                 >
                   <div>
-                    <p className="font-medium text-gray-900 mb-1">{app.scholarshipName}</p>
+                    <p className="font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</p>
                     <p className="text-xs text-gray-500">Updated {app.updatedAt}</p>
                   </div>
                   <div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
                       app.status === 'SUBMITTED'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : app.status === 'IN_PROGRESS'
                         ? 'bg-blue-50 text-blue-700 border border-blue-200'
                         : app.status === 'DRAFT'

@@ -251,34 +251,62 @@ export async function PUT(request: NextRequest) {
 // GET - Fetch user profile
 export async function GET(request: NextRequest) {
   try {
-    // Support both Bearer token (extension) and Clerk session (web)
+    // Check if this is an extension request
+    const isExtensionRequest = request.headers.get('x-extension-request') === 'true';
     let userId: string | null = null;
     
-    // Check for Bearer token first (browser extension)
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      // Decode JWT token to get user ID
-      // Note: In production, verify token signature with Clerk's public key
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          // Decode base64url encoded payload
-          const payload = JSON.parse(
-            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-          );
-          // Clerk tokens use 'sub' for user ID
-          userId = payload.sub || null;
-        }
-      } catch (error) {
-        console.error('Token decode error:', error);
+    if (isExtensionRequest) {
+      // Extension requests use email/clerkId stored in localStorage
+      const extensionClerkId = request.headers.get('x-extension-user-id');
+      const extensionEmail = request.headers.get('x-extension-user-email');
+      
+      if (!extensionClerkId && !extensionEmail) {
+        return NextResponse.json(
+          { error: 'Unauthorized - missing user identifier' },
+          { status: 401 }
+        );
       }
-    }
-    
-    // Fall back to Clerk auth() for web requests (uses cookies)
-    if (!userId) {
-      const authResult = await auth();
-      userId = authResult.userId;
+      
+      // Use the clerkId directly if available, otherwise look up by email
+      userId = extensionClerkId || null;
+      
+      // If we only have email, we need to look up the user to get clerkId
+      if (!userId && extensionEmail) {
+        const user = await prisma.user.findFirst({
+          where: { email: extensionEmail },
+          select: { clerkId: true }
+        });
+        if (user) {
+          userId = user.clerkId;
+        }
+      }
+    } else {
+      // Web requests use Bearer token or Clerk session
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        // Decode JWT token to get user ID
+        // Note: In production, verify token signature with Clerk's public key
+        try {
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            // Decode base64url encoded payload
+            const payload = JSON.parse(
+              Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+            );
+            // Clerk tokens use 'sub' for user ID
+            userId = payload.sub || null;
+          }
+        } catch (error) {
+          console.error('Token decode error:', error);
+        }
+      }
+      
+      // Fall back to Clerk auth() for web requests (uses cookies)
+      if (!userId) {
+        const authResult = await auth();
+        userId = authResult.userId;
+      }
     }
 
     if (!userId) {
@@ -297,15 +325,29 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
+      // User doesn't exist in database yet - this can happen if webhook hasn't fired
+      // Try to get Clerk user data to create the user
+      try {
+        const clerkUser = await currentUser();
+        if (clerkUser) {
+          // User exists in Clerk but not in DB - return 200 with null profile
+          // The frontend/extension should handle this by prompting user to complete onboarding
+          return NextResponse.json({
+            profile: null,
+            user: {
+              name: clerkUser.fullName || clerkUser.firstName || '',
+              email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+              firstName: clerkUser.firstName || '',
+              lastName: clerkUser.lastName || '',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching Clerk user:', error);
+      }
+      
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    if (!user.profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
+        { error: 'User not found. Please complete sign up first.' },
         { status: 404 }
       );
     }
@@ -320,8 +362,10 @@ export async function GET(request: NextRequest) {
       clerkEmail.split('@')[0] || 
       'User';
 
+    // Return 200 even if profile doesn't exist yet (user hasn't completed onboarding)
+    // This is a valid state, not an error
     return NextResponse.json({ 
-      profile: user.profile,
+      profile: user.profile || null,
       user: {
         name: clerkName,
         email: clerkEmail,

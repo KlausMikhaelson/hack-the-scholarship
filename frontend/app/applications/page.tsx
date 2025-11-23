@@ -57,7 +57,7 @@ export default function ApplicationsPage() {
     switch (status) {
       case 'DRAFT': return 'bg-gray-50 text-gray-700 border-gray-200';
       case 'IN_PROGRESS': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'SUBMITTED': return 'bg-green-50 text-green-700 border-green-200';
+      case 'SUBMITTED': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'ARCHIVED': return 'bg-gray-50 text-gray-500 border-gray-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -81,8 +81,8 @@ export default function ApplicationsPage() {
       <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="text-gray-500">Loading applications...</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-emerald-600" />
+              <p className="text-gray-600 font-medium">Loading applications...</p>
             </div>
           </div>
         </div>
@@ -92,11 +92,11 @@ export default function ApplicationsPage() {
   if (error) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center shadow-sm">
+            <p className="text-red-600 mb-4 font-medium">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md"
             >
               Retry
             </button>
@@ -109,8 +109,8 @@ export default function ApplicationsPage() {
     <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-3xl font-bold text-[#111] mb-2">My Applications</h1>
-          <p className="text-gray-500">Track and manage your scholarship applications</p>
+          <h1 className="text-4xl font-bold text-[#111] mb-3">My Applications</h1>
+          <p className="text-lg text-gray-600">Track and manage your scholarship applications</p>
         </div>
 
         {/* Applications List */}
@@ -119,14 +119,14 @@ export default function ApplicationsPage() {
             <Link
               key={app.id}
               href={`/applications/${app.id}`}
-              className="block bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+              className="group block bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">{app.scholarshipName}</h3>
+                  <h3 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</h3>
                   <p className="text-sm text-gray-500">Last updated {formatDate(app.updatedAt)}</p>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5 ${getStatusColor(app.status)}`}>
+                <div className={`px-4 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-2 ${getStatusColor(app.status)}`}>
                   {getStatusIcon(app.status)}
                   {app.status.replace('_', ' ')}
                 </div>
@@ -134,13 +134,13 @@ export default function ApplicationsPage() {
 
               {/* Progress Bar */}
               <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2 font-medium">
                   <span>Progress</span>
                   <span>{app.progress}%</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
+                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2.5 rounded-full transition-all shadow-sm"
                     style={{ width: `${app.progress}%` }}
                   />
                 </div>
@@ -151,13 +151,15 @@ export default function ApplicationsPage() {
 
         {/* Empty State */}
         {applications.length === 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No applications yet</h3>
-            <p className="text-gray-500 mb-6">Start by browsing available scholarships</p>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-12 text-center shadow-sm">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
+              <FileText className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No applications yet</h3>
+            <p className="text-gray-600 mb-6">Start by browsing available scholarships</p>
             <Link
               href="/scholarships"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#111] hover:bg-[#1a1a1a] text-white rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
             >
               Browse Scholarships
             </Link>
