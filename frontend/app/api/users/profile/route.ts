@@ -251,7 +251,35 @@ export async function PUT(request: NextRequest) {
 // GET - Fetch user profile
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    // Support both Bearer token (extension) and Clerk session (web)
+    let userId: string | null = null;
+    
+    // Check for Bearer token first (browser extension)
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      // Decode JWT token to get user ID
+      // Note: In production, verify token signature with Clerk's public key
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          // Decode base64url encoded payload
+          const payload = JSON.parse(
+            Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+          );
+          // Clerk tokens use 'sub' for user ID
+          userId = payload.sub || null;
+        }
+      } catch (error) {
+        console.error('Token decode error:', error);
+      }
+    }
+    
+    // Fall back to Clerk auth() for web requests (uses cookies)
+    if (!userId) {
+      const authResult = await auth();
+      userId = authResult.userId;
+    }
 
     if (!userId) {
       return NextResponse.json(

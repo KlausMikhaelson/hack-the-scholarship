@@ -8,9 +8,32 @@
 </head>
 <body>
   <div class="container">
-    <h1>HackTheScholarship</h1>
-    <p>Browser Extension</p>
-    <button id="actionBtn" class="btn-primary">Click Me</button>
+    <h1>Scholarly</h1>
+    <p class="subtitle">Auto-fill Scholarship Applications</p>
+    
+    <div id="authSection" class="auth-section">
+      <div id="signedOut" class="auth-state" style="display: none;">
+        <p class="auth-message">Sign in to auto-fill forms</p>
+        <button id="signInBtn" class="btn-primary">Sign In</button>
+      </div>
+      
+      <div id="signedIn" class="auth-state" style="display: none;">
+        <div class="user-info">
+          <div class="user-avatar">U</div>
+          <div class="user-details">
+            <p id="userName" class="user-name">Loading...</p>
+            <p id="userEmail" class="user-email">Loading...</p>
+          </div>
+        </div>
+        <button id="fillFormBtn" class="btn-primary btn-fill">Fill Form</button>
+        <button id="signOutBtn" class="btn-secondary">Sign Out</button>
+      </div>
+      
+      <div id="loading" class="auth-state">
+        <p class="auth-message">Loading...</p>
+      </div>
+    </div>
+    
     <div id="status" class="status"></div>
   </div>
   <script src="popup.js"></script>
