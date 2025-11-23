@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function TestFormPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -19,12 +19,15 @@ export default function TestFormPage() {
             Scholarship Application Form
           </h1>
           <p className="text-gray-600 mb-8">
-            Test form for browser extension - Fill out this form to test auto-fill functionality
+            Test form for browser extension - Fill out this form to test
+            auto-fill functionality
           </p>
 
           {submitted && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800 font-medium">Form submitted successfully!</p>
+              <p className="text-green-800 font-medium">
+                Form submitted successfully!
+              </p>
             </div>
           )}
 
@@ -37,7 +40,10 @@ export default function TestFormPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     First Name
                   </label>
                   <input
@@ -50,7 +56,10 @@ export default function TestFormPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Last Name
                   </label>
                   <input
@@ -64,7 +73,10 @@ export default function TestFormPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Full Name
                 </label>
                 <input
@@ -77,7 +89,10 @@ export default function TestFormPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <input
@@ -98,7 +113,10 @@ export default function TestFormPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="gpa" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="gpa"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     GPA (Grade Point Average)
                   </label>
                   <input
@@ -111,7 +129,10 @@ export default function TestFormPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="major" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="major"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Major / Field of Study
                   </label>
                   <input
@@ -132,7 +153,10 @@ export default function TestFormPage() {
               </h2>
 
               <div className="mt-4">
-                <label htmlFor="extracurriculars" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="extracurriculars"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Extracurricular Activities
                 </label>
                 <textarea
@@ -145,7 +169,10 @@ export default function TestFormPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="achievements" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="achievements"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Awards & Achievements
                 </label>
                 <textarea
@@ -165,7 +192,10 @@ export default function TestFormPage() {
               </h2>
 
               <div className="mt-4">
-                <label htmlFor="essay" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="essay"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Personal Statement / Essay
                 </label>
                 <textarea
@@ -178,7 +208,10 @@ export default function TestFormPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="background" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="background"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Personal Background
                 </label>
                 <textarea
@@ -205,12 +238,12 @@ export default function TestFormPage() {
 
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>Testing Instructions:</strong> Use the browser extension to auto-fill this form. 
-            Click the extension icon and select "Fill Form" to test the form detection and filling functionality.
+            <strong>Testing Instructions:</strong> Use the browser extension to
+            auto-fill this form. Click the extension icon and select &apos;Fill Form&apos;
+            to test the form detection and filling functionality.
           </p>
         </div>
       </div>
     </div>
   );
 }
-
