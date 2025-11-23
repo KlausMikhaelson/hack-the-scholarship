@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/prisma';
 
 // PATCH - Update application (save edited essay)
 export async function PATCH(
@@ -6,25 +8,67 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { editedEssay, status } = body;
     const applicationId = params.id;
 
-    // Mock update - replace with actual DB call
-    const updated = {
-      id: applicationId,
-      editedEssay,
-      status,
-      updatedAt: new Date().toISOString(),
-    };
+    // Get user to verify ownership
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
 
-    // In production: await prisma.application.update({ where: { id: applicationId }, data: { ... } })
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify application belongs to user
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
+    }
+
+    if (application.userId !== user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Update application
+    const updated = await prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        editedEssay: editedEssay || undefined,
+        status: status || undefined,
+      },
+      include: {
+        scholarship: true,
+      },
+    });
 
     return NextResponse.json({ application: updated });
   } catch (error) {
     console.error('Application update error:', error);
     return NextResponse.json(
-      { error: 'Failed to update application' },
+      { error: 'Failed to update application', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -36,25 +80,73 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const applicationId = params.id;
 
-    // Mock application - replace with actual DB call
-    const mockApplication = {
-      id: applicationId,
-      scholarshipName: 'Gates Millennium Scholarship',
-      generatedEssay: 'Generated essay content...',
-      editedEssay: null,
-      status: 'IN_PROGRESS',
-      updatedAt: new Date().toISOString(),
+    // Get user to verify ownership
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch application with scholarship details
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        scholarship: true,
+      },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify ownership
+    if (application.userId !== user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Format response
+    const formatted = {
+      id: application.id,
+      scholarshipId: application.scholarshipId,
+      scholarshipName: application.scholarship?.name || 'Unknown Scholarship',
+      generatedEssay: application.generatedEssay,
+      editedEssay: application.editedEssay,
+      status: application.status,
+      updatedAt: application.updatedAt.toISOString(),
+      createdAt: application.createdAt.toISOString(),
+      scholarshipPersonality: application.scholarshipPersonality as any,
+      adaptiveWeights: application.adaptiveWeights as any,
+      strengthMapping: application.strengthMapping as any,
+      explainabilityMatrix: application.explainabilityMatrix as any,
     };
 
-    // In production: const app = await prisma.application.findUnique({ where: { id: applicationId }, include: { scholarship: true } })
-
-    return NextResponse.json({ application: mockApplication });
+    return NextResponse.json({ application: formatted });
   } catch (error) {
     console.error('Application fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch application' },
+      { error: 'Failed to fetch application', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

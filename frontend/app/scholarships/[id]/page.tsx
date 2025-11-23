@@ -20,6 +20,8 @@ export default function ScholarshipDetailPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
+  const [existingApplication, setExistingApplication] = useState<any>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -46,6 +48,40 @@ export default function ScholarshipDetailPage() {
         } else if (profileResponse.status === 404) {
           // Profile not found - user needs to complete onboarding
           setError('Please complete your profile first');
+          setIsLoadingData(false);
+          return;
+        }
+
+        // Check for existing application
+        const applicationsResponse = await fetch('/api/applications');
+        if (applicationsResponse.ok) {
+          const applicationsData = await applicationsResponse.json();
+          const existingApp = applicationsData.applications?.find(
+            (app: any) => app.scholarshipId === scholarshipId
+          );
+          
+          if (existingApp) {
+            setExistingApplication(existingApp);
+            setApplicationId(existingApp.id);
+            
+            // Fetch full application details
+            const appDetailResponse = await fetch(`/api/applications/${existingApp.id}`);
+            if (appDetailResponse.ok) {
+              const appDetailData = await appDetailResponse.json();
+              const app = appDetailData.application;
+              
+              // Convert application to pipeline result format
+              setPipelineResult({
+                scholarshipPersonality: app.scholarshipPersonality || {},
+                adaptiveWeights: app.adaptiveWeights || [],
+                strengthMapping: app.strengthMapping || [],
+                tailoredEssay: app.editedEssay || app.generatedEssay || '',
+                explainability: app.explainabilityMatrix || [],
+                originalSample: undefined,
+                explanation: {},
+              });
+            }
+          }
         }
       } catch (err) {
         console.error('Data fetch error:', err);
@@ -79,6 +115,12 @@ export default function ScholarshipDetailPage() {
 
       const result = await response.json();
       setPipelineResult(result);
+      
+      // Update application ID if returned
+      if (result.applicationId) {
+        setApplicationId(result.applicationId);
+        setExistingApplication({ id: result.applicationId, scholarshipId });
+      }
     } catch (error) {
       console.error('Generation error:', error);
       alert('Failed to generate application. Please try again.');
@@ -182,24 +224,68 @@ export default function ScholarshipDetailPage() {
             {/* Generate or Show Results */}
             {!pipelineResult && !isLoading && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm text-center">
-                <h3 className="text-lg font-semibold text-[#111] mb-2">Ready to Generate?</h3>
-                <p className="text-sm text-gray-500 mb-6">
-                  We&apos;ll use your profile to create a tailored application for this scholarship
-                </p>
-                <button
-                  onClick={handleGenerateApplication}
-                  className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow inline-flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4" />
-                  Generate Tailored Essay
-                </button>
+                {existingApplication ? (
+                  <>
+                    <h3 className="text-lg font-semibold text-[#111] mb-2">Application Found</h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                      You have an existing application for this scholarship. You can edit it or generate a new version.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Link
+                        href={`/applications/${existingApplication.id}`}
+                        className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow inline-flex items-center gap-2"
+                      >
+                        Edit Application
+                      </Link>
+                      <button
+                        onClick={handleGenerateApplication}
+                        className="h-12 px-8 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all shadow-sm hover:shadow inline-flex items-center gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Regenerate Essay
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold text-[#111] mb-2">Ready to Generate?</h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                      We&apos;ll use your profile to create a tailored application for this scholarship
+                    </p>
+                    <button
+                      onClick={handleGenerateApplication}
+                      className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow inline-flex items-center gap-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      Generate Tailored Essay
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
             {isLoading && <LoadingState />}
 
             {pipelineResult && !isLoading && (
-              <PipelineOutput result={pipelineResult} onRegenerate={handleRegenerate} />
+              <div className="space-y-4">
+                {applicationId && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">Application Created</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        You can edit your essay or view full details
+                      </p>
+                    </div>
+                    <Link
+                      href={`/applications/${applicationId}`}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Edit Application
+                    </Link>
+                  </div>
+                )}
+                <PipelineOutput result={pipelineResult} onRegenerate={handleRegenerate} />
+              </div>
             )}
           </div>
 
