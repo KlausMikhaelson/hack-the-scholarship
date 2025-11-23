@@ -112,6 +112,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Extract scores from studentEvaluation - new format includes whyItMatters and howStudentMeets
+    const scores = pipelineResult.studentEvaluation.scores || {};
+    
     // Format response
     const result = {
       scholarshipPersonality: {
@@ -135,16 +138,26 @@ export async function POST(request: NextRequest) {
         })),
       ],
       tailoredEssay: pipelineResult.essay.essay || '',
-      explainability: adaptiveWeights.map((weight: any) => ({
-        value: weight.label,
-        weight: weight.weight,
-        whyItMatters: `This criterion is important for evaluating scholarship candidates.`,
-        howStudentMeetsIt: pipelineResult.studentEvaluation.strongMatches?.includes(weight.label) 
-          ? `Student demonstrates strong performance in ${weight.label.toLowerCase()}.`
-          : `Student shows potential in ${weight.label.toLowerCase()}.`,
-      })),
+      explainability: adaptiveWeights.map((weight: any) => {
+        // Use the improved scores structure if available
+        const scoreData = scores[weight.label];
+        return {
+          value: weight.label,
+          weight: weight.weight,
+          whyItMatters: scoreData?.whyItMatters || `This criterion is important for evaluating scholarship candidates.`,
+          howStudentMeetsIt: scoreData?.howStudentMeets || (
+            pipelineResult.studentEvaluation.strongMatches?.includes(weight.label) 
+              ? `Student demonstrates strong performance in ${weight.label.toLowerCase()}.`
+              : `Student shows potential in ${weight.label.toLowerCase()}.`
+          ),
+          score: scoreData?.score || null,
+        };
+      }),
       originalSample: studentProfile.writingSample || undefined,
       explanation: pipelineResult.essay.explanation || {},
+      valueAlignment: pipelineResult.essay.valueAlignment || {},
+      keywordUsage: pipelineResult.essay.keywordUsage || [],
+      totalScore: pipelineResult.studentEvaluation.totalScore || null,
     };
 
     // Save to database
