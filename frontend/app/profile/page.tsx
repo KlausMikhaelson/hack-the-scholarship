@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { Save, User as UserIcon } from 'lucide-react';
 
 interface ProfileFormData {
@@ -18,7 +18,8 @@ interface ProfileFormData {
 }
 
 export default function ProfilePage() {
-  const { user: clerkUser, isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

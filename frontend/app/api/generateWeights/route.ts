@@ -68,11 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate adaptive weights
+    const scholarshipAnalysisStr = typeof scholarshipAnalysis === 'string' 
+      ? scholarshipAnalysis 
+      : JSON.stringify(scholarshipAnalysis);
+    
     const weightsRaw = await weightsChain.invoke({
-      scholarshipAnalysis: typeof scholarshipAnalysis === 'string' 
-        ? scholarshipAnalysis 
-        : JSON.stringify(scholarshipAnalysis),
-    });
+      scholarshipAnalysis: scholarshipAnalysisStr,
+    } as any);
 
     const weightsData = parseJSON(weightsRaw);
 

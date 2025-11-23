@@ -62,7 +62,7 @@ export default function OnboardingPage() {
     }
 
     if (isValid) {
-      setValidatedSteps((prev) => [...new Set([...prev, currentStep])]);
+      setValidatedSteps((prev) => Array.from(new Set([...prev, currentStep])));
       setCurrentStep((prev) => prev + 1);
     }
   };
