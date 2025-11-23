@@ -2,32 +2,64 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { ChatAnthropic } from "@langchain/anthropic";
-
-export const dynamic = 'force-dynamic';
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
 
-// Helper function to parse JSON
+export const dynamic = 'force-dynamic';
+
+// Helper function to parse JSON with robust error handling
 function parseJSON(jsonString: string): any {
   let cleaned = jsonString.trim();
+
+  // Remove markdown code block wrappers if present
   if (cleaned.startsWith("```json")) {
     cleaned = cleaned.replace(/^```json\n?/, "").replace(/\n?```$/, "");
   } else if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```\n?/, "").replace(/\n?```$/, "");
   }
+
+  // Attempt to remove trailing commas before closing braces/brackets
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+  // Try to find the first and last brace to extract the main JSON object
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleaned = jsonMatch[0];
+  }
+
   try {
     return JSON.parse(cleaned);
   } catch (error) {
     console.error("JSON parse error:", error);
+    console.error("Malformed JSON string:", cleaned.substring(0, 500));
+    
+    // Fallback: Try to extract essays array if main parsing fails
+    try {
+      const essaysMatch = cleaned.match(/"essays"\s*:\s*(\[[\s\S]*?\])/);
+      if (essaysMatch) {
+        const essaysArray = JSON.parse(essaysMatch[1].replace(/,(\s*[}\]])/g, '$1'));
+        return { essays: essaysArray, comparison: {} };
+      }
+    } catch (e) {
+      console.error("Fallback parsing also failed:", e);
+    }
+    
     throw error;
   }
 }
 
 // Initialize Claude model
+const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+if (!apiKey) {
+  console.error('ANTHROPIC_API_KEY or CLAUDE_API_KEY not configured');
+}
+
 const model = new ChatAnthropic({
   modelName: "claude-sonnet-4-20250514",
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY,
+  apiKey: apiKey,
+  temperature: 0.7,
+  maxTokens: 8000, // Increased for longer essays
 });
 
 const comparativeEssayPrompt = PromptTemplate.fromTemplate(`
@@ -82,7 +114,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    // Parse request body (handle empty body gracefully)
+    let body: any = {};
+    try {
+      const contentType = request.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await request.text();
+        if (text && text.trim().length > 0) {
+          body = JSON.parse(text);
+        }
+      }
+    } catch (e) {
+      // Empty body is fine, we don't require any parameters
+      console.log('No request body provided or failed to parse, using defaults');
+    }
     const { scholarshipTypes } = body; // Optional: can specify which types to generate
 
     // Fetch user profile from database
@@ -116,12 +161,63 @@ export async function POST(request: NextRequest) {
       writingSample: user.profile.writingSample || '',
     }, null, 2);
 
-    // Generate comparative essays
-    const resultRaw = await comparativeChain.invoke({
-      studentProfile,
-    });
+    // Check API key
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Claude API key not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Generate comparative essays with timeout
+    console.log('Starting comparative essay generation...');
+    const startTime = Date.now();
+    
+    let resultRaw: string;
+    try {
+      resultRaw = await Promise.race([
+        comparativeChain.invoke({
+          studentProfile,
+        }),
+        new Promise<string>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 120 seconds')), 120000)
+        )
+      ]) as string;
+    } catch (chainError) {
+      console.error('Chain invocation error:', chainError);
+      if (chainError instanceof Error && chainError.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Request timed out. The essay generation is taking too long. Please try again.' },
+          { status: 504 }
+        );
+      }
+      throw chainError;
+    }
+
+    const elapsedTime = Date.now() - startTime;
+    console.log(`Essay generation completed in ${elapsedTime}ms`);
+
+    if (!resultRaw || resultRaw.trim().length === 0) {
+      console.error('Empty response from Claude');
+      return NextResponse.json(
+        { error: 'Received empty response from AI. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    console.log('Raw response length:', resultRaw.length);
+    console.log('Raw response preview:', resultRaw.substring(0, 200));
 
     const result = parseJSON(resultRaw);
+
+    // Validate result structure
+    if (!result || !result.essays || !Array.isArray(result.essays)) {
+      console.error('Invalid result structure:', result);
+      return NextResponse.json(
+        { error: 'Invalid response format from AI. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       essays: result.essays || [],
@@ -129,8 +225,23 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Comparative essay generation error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to generate comparative essays';
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message.includes('API key')) {
+        errorMessage = 'API configuration error. Please contact support.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'Failed to parse AI response. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to generate comparative essays', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: errorMessage, details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

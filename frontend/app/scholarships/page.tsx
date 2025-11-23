@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Award, Plus, ExternalLink, Search } from 'lucide-react';
+import ScholarshipScrapeForm from '@/components/ScholarshipScrapeForm';
 
 interface Scholarship {
   id: string;
@@ -16,8 +17,7 @@ interface Scholarship {
 }
 
 export default function ScholarshipsPage() {
-  const [scholarshipUrl, setScholarshipUrl] = useState('');
-  const [isScrapingLoading, setIsScrapingLoading] = useState(false);
+  const [showScrapeForm, setShowScrapeForm] = useState(false);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,46 +53,21 @@ export default function ScholarshipsPage() {
     fetchScholarships();
   }, []);
 
-  const handleScrapeScholarship = async () => {
-    if (!scholarshipUrl.trim()) {
-      alert('Please enter a scholarship URL');
-      return;
-    }
-
-    setIsScrapingLoading(true);
+  const handleScrapeSuccess = async (scholarshipId: string) => {
+    setShowScrapeForm(false);
     
-    try {
-      const response = await fetch('/api/scholarships/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: scholarshipUrl }),
-      });
-
-      if (!response.ok) throw new Error('Scraping failed');
-
-      const { scholarshipId } = await response.json();
-      
-      // Clear the input
-      setScholarshipUrl('');
-      
-      // Refresh the scholarships list
-      const refreshResponse = await fetch('/api/scholarships');
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setScholarships(data.scholarships || []);
-        setHasProfile(data.hasProfile || false);
-        setMatched(data.matched || false);
-        setTotalMatched(data.totalMatched || 0);
-      }
-      
-      // Navigate to the new scholarship
-      window.location.href = `/scholarships/${scholarshipId}`;
-    } catch (error) {
-      console.error('Scraping error:', error);
-      alert('Failed to scrape scholarship. Please try again or enter manually.');
-    } finally {
-      setIsScrapingLoading(false);
+    // Refresh the scholarships list
+    const refreshResponse = await fetch('/api/scholarships');
+    if (refreshResponse.ok) {
+      const data = await refreshResponse.json();
+      setScholarships(data.scholarships || []);
+      setHasProfile(data.hasProfile || false);
+      setMatched(data.matched || false);
+      setTotalMatched(data.totalMatched || 0);
     }
+    
+    // Navigate to the new scholarship
+    window.location.href = `/scholarships/${scholarshipId}`;
   };
 
   return (
@@ -104,44 +79,35 @@ export default function ScholarshipsPage() {
         </div>
 
         {/* Add Scholarship Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center border border-emerald-100">
-              <Plus className="w-6 h-6 text-emerald-600" />
-            </div>
-            <h2 className="text-xl font-bold text-[#111]">Add New Scholarship</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-6">
-            Paste a scholarship URL and we&apos;ll automatically extract the details
-          </p>
-
-          <div className="flex gap-3">
-            <input
-              type="url"
-              value={scholarshipUrl}
-              onChange={(e) => setScholarshipUrl(e.target.value)}
-              placeholder="https://example.com/scholarship-details"
-              className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+        {showScrapeForm ? (
+          <div className="mb-8">
+            <ScholarshipScrapeForm
+              onSuccess={handleScrapeSuccess}
+              onCancel={() => setShowScrapeForm(false)}
             />
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center border border-emerald-100">
+                <Plus className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-[#111]">Add New Scholarship</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Paste scholarship URLs and we&apos;ll automatically extract and parse all the details. 
+              Some scholarships span multiple pages - add all relevant URLs.
+            </p>
+
             <button
-              onClick={handleScrapeScholarship}
-              disabled={isScrapingLoading}
-              className="px-6 py-3 bg-[#111] hover:bg-[#1a1a1a] text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow-md"
+              onClick={() => setShowScrapeForm(true)}
+              className="w-full px-6 py-3 bg-[#111] hover:bg-[#1a1a1a] text-white rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
             >
-              {isScrapingLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Scraping...
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="w-4 h-4" />
-                  Scrape Scholarship
-                </>
-              )}
+              <Plus className="w-5 h-5" />
+              Add Scholarship with Scraping
             </button>
           </div>
-        </div>
+        )}
 
         {/* Profile Banner */}
         {!hasProfile && (

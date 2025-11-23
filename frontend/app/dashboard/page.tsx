@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
-import { Award, FileText, TrendingUp, Plus } from 'lucide-react';
+import { Award, FileText, TrendingUp, Plus, Zap } from 'lucide-react';
 
 interface DashboardStats {
   totalApplications: number;
@@ -18,6 +18,7 @@ interface RecentApplication {
   scholarshipName: string;
   status: string;
   updatedAt: string;
+  readyToFill?: boolean;
 }
 
 export default function DashboardPage() {
@@ -206,8 +207,16 @@ export default function DashboardPage() {
                   href={`/applications/${app.id}`}
                   className="flex items-center justify-between p-5 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all group"
                 >
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</p>
+                      {app.readyToFill && (
+                        <span className="px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-sm">
+                          <Zap className="w-3 h-3" />
+                          Ready
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">Updated {app.updatedAt}</p>
                   </div>
                   <div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Download, Copy, Check, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Download, Copy, Check, Sparkles, Loader2, Zap } from 'lucide-react';
 
 export default function ApplicationDetailPage() {
   const params = useParams();
@@ -21,6 +21,8 @@ export default function ApplicationDetailPage() {
   const [aiMenuPosition, setAiMenuPosition] = useState({ x: 100, y: 100 });
   const [isImproving, setIsImproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [readyToFill, setReadyToFill] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
 
   useEffect(() => {
     async function fetchApplication() {
@@ -40,6 +42,8 @@ export default function ApplicationDetailPage() {
         setStatus(app.status || 'DRAFT');
         setEssay(app.editedEssay || app.generatedEssay || '');
         setLastSaved(app.updatedAt ? new Date(app.updatedAt) : null);
+        setReadyToFill(app.readyToFill || false);
+        setIsProfileComplete(app.isProfileComplete || false);
       } catch (err) {
         console.error('Application fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load application');
@@ -349,12 +353,20 @@ export default function ApplicationDetailPage() {
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#111] mb-2">{scholarshipName}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-[#111]">{scholarshipName}</h1>
+                {readyToFill && (
+                  <span className="px-3 py-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm">
+                    <Zap className="w-3.5 h-3.5" />
+                    Ready to Fill
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                   status === 'DRAFT' ? 'bg-gray-50 text-gray-700 border-gray-200' :
                   status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  status === 'SUBMITTED' ? 'bg-green-50 text-green-700 border-green-200' :
+                  status === 'SUBMITTED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                   'bg-gray-50 text-gray-500 border-gray-200'
                 }`}>
                   {status.replace('_', ' ')}
@@ -363,6 +375,21 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm text-gray-500">Last saved {formatLastSaved()}</span>
                 )}
               </div>
+              {readyToFill && (
+                <div className="mt-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl">
+                  <p className="text-sm text-emerald-700 font-medium flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    All information provided! Use the browser extension to automatically fill scholarship forms.
+                  </p>
+                </div>
+              )}
+              {!isProfileComplete && !readyToFill && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-sm text-amber-700 font-medium">
+                    Complete your profile to enable automatic form filling with the browser extension.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FileText, Clock, CheckCircle, Archive, Loader2 } from 'lucide-react';
+import { FileText, Clock, CheckCircle, Archive, Loader2, Zap } from 'lucide-react';
 
 interface Application {
   id: string;
@@ -12,6 +12,7 @@ interface Application {
   updatedAt: string;
   createdAt: string;
   progress: number;
+  readyToFill?: boolean;
 }
 
 export default function ApplicationsPage() {
@@ -123,7 +124,15 @@ export default function ApplicationsPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-emerald-600 transition-colors">{app.scholarshipName}</h3>
+                    {app.readyToFill && (
+                      <span className="px-2.5 py-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-sm">
+                        <Zap className="w-3 h-3" />
+                        Ready to Fill
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">Last updated {formatDate(app.updatedAt)}</p>
                 </div>
                 <div className={`px-4 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-2 ${getStatusColor(app.status)}`}>
@@ -135,15 +144,24 @@ export default function ApplicationsPage() {
               {/* Progress Bar */}
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-gray-600 mb-2 font-medium">
-                  <span>Progress</span>
+                  <span>{app.readyToFill ? 'Ready to fill with extension' : 'Progress'}</span>
                   <span>{app.progress}%</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2.5">
                   <div
-                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2.5 rounded-full transition-all shadow-sm"
+                    className={`h-2.5 rounded-full transition-all shadow-sm ${
+                      app.readyToFill 
+                        ? 'bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 animate-pulse' 
+                        : 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                    }`}
                     style={{ width: `${app.progress}%` }}
                   />
                 </div>
+                {app.readyToFill && (
+                  <p className="text-xs text-emerald-600 mt-2 font-medium">
+                    ✓ All information provided - Use browser extension to fill forms
+                  </p>
+                )}
               </div>
             </Link>
           ))}
