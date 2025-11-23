@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Download, Copy, Check, Sparkles, Loader2 } from 'lucide-react';
 
@@ -123,25 +122,20 @@ export default function ApplicationDetailPage() {
 
   if (isLoading) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="text-gray-500">Loading application...</p>
-            </div>
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-gray-500">Loading application...</p>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-5xl mx-auto px-6 py-12">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-600 mb-4">{error}</p>
             <Link
@@ -153,7 +147,6 @@ export default function ApplicationDetailPage() {
             </Link>
           </div>
         </div>
-      </>
     );
   }
 
@@ -343,10 +336,7 @@ export default function ApplicationDetailPage() {
   };
 
   return (
-    <>
-      <Navigation />
-      
-      <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="max-w-5xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -495,7 +485,6 @@ export default function ApplicationDetailPage() {
           </div>
         )}
       </div>
-    </>
   );
 }
 

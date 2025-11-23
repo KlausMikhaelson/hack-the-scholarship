@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 import PipelineOutput from '@/components/PipelineOutput';
 import LoadingState from '@/components/LoadingState';
 import { Scholarship, UserProfile, PipelineResult } from '@/types';
@@ -78,6 +77,7 @@ export default function ScholarshipDetailPage() {
                 tailoredEssay: app.editedEssay || app.generatedEssay || '',
                 explainability: app.explainabilityMatrix || [],
                 originalSample: undefined,
+                // @ts-ignore
                 explanation: {},
               });
             }
@@ -160,21 +160,16 @@ export default function ScholarshipDetailPage() {
 
   if (isLoadingData) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-6 py-12 text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading scholarship...</p>
-        </div>
-      </>
+      <div className="max-w-4xl mx-auto px-6 py-12 text-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-500">Loading scholarship...</p>
+      </div>
     );
   }
 
   if (error || !scholarship) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-600 mb-4">{error || 'Scholarship not found'}</p>
             <Link
@@ -186,15 +181,11 @@ export default function ScholarshipDetailPage() {
             </Link>
           </div>
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -328,7 +319,6 @@ export default function ScholarshipDetailPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }
 

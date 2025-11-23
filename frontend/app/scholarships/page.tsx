@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navigation from '@/components/Navigation';
 import Link from 'next/link';
 import { Award, Plus, ExternalLink, Search } from 'lucide-react';
 
@@ -97,10 +96,7 @@ export default function ScholarshipsPage() {
   };
 
   return (
-    <>
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-3xl font-bold text-[#111] mb-2">Scholarships</h1>
@@ -302,7 +298,6 @@ export default function ScholarshipsPage() {
           )}
         </div>
       </div>
-    </>
   );
 }
 

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navigation from '@/components/Navigation';
 import ComparativeEssays from '@/components/ComparativeEssays';
 import { useAuth } from '@clerk/nextjs';
 import { FileText, Loader2 } from 'lucide-react';
@@ -49,20 +48,15 @@ export default function ComparePage() {
 
   if (!isLoaded) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+      <div className="max-w-6xl mx-auto px-6 py-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-500">Loading...</p>
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#111] mb-2">Comparative Essay Generator</h1>
           <p className="text-gray-500">
@@ -122,7 +116,6 @@ export default function ComparePage() {
           </>
         )}
       </div>
-    </>
   );
 }
 

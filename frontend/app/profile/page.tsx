@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@clerk/nextjs';
 import { Save, User as UserIcon } from 'lucide-react';
@@ -125,9 +124,7 @@ export default function ProfilePage() {
   // Show loading while auth is loading or while fetching profile
   if (!isLoaded || isLoading) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -135,16 +132,13 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
   // Redirect if not signed in (handled in useEffect, but show loading while redirecting)
   if (isLoaded && !isSignedIn) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -152,15 +146,12 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-800 font-medium mb-2">Error loading profile</p>
             <p className="text-red-600 text-sm mb-4">{error}</p>
@@ -172,15 +163,11 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
+    <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-3">
@@ -310,7 +297,6 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
-    </>
   );
 }
 

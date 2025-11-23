@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { Award, Home, FileText, User } from 'lucide-react'
+import { Award, Home, FileText, User, GitCompare } from 'lucide-react'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -63,6 +63,13 @@ export default function RootLayout({
                     >
                       <User className="w-4 h-4" />
                       Profile
+                    </Link>
+                    <Link
+                      href="/compare"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                      <GitCompare className="w-4 h-4" />
+                      Compare
                     </Link>
                   </nav>
 

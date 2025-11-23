@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import { Award, FileText, TrendingUp, Plus } from 'lucide-react';
 
 interface DashboardStats {
@@ -72,9 +71,7 @@ export default function DashboardPage() {
 
   if (!authLoaded || isLoading) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -82,15 +79,12 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-800 font-medium mb-2">Error loading dashboard</p>
             <p className="text-red-600 text-sm">{error}</p>
@@ -102,15 +96,11 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-      </>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-3xl font-bold text-[#111] mb-2">Dashboard</h1>
@@ -228,7 +218,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }
 
