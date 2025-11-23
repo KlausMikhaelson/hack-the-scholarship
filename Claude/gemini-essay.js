@@ -1,21 +1,14 @@
-import express, { Request, Response } from "express";
 import dotenv from "dotenv";
-import { ChatAnthropic } from "@langchain/anthropic";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { RunnableSequence } from "@langchain/core/runnables";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Load environment variables
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(express.json());
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
 // Helper function to parse JSON that might be wrapped in markdown code blocks
-function parseJSON(jsonString: string) {
+function parseJSON(jsonString) {
   let cleaned = jsonString.trim();
   if (cleaned.startsWith("```json")) {
     cleaned = cleaned.replace(/^```json\n?/, "").replace(/\n?```$/, "");
@@ -25,8 +18,8 @@ function parseJSON(jsonString: string) {
   return JSON.parse(cleaned);
 }
 
-// Helper function to format scholarship data
-function formatScholarshipData(scholarshipObj: any) {
+// Helper function to format scholarship data, keeping only relevant fields
+function formatScholarshipData(scholarshipObj) {
   return {
     title: scholarshipObj.title,
     description: scholarshipObj.description,
@@ -45,7 +38,7 @@ function formatScholarshipData(scholarshipObj: any) {
 }
 
 // Helper function to format student profile data
-function formatStudentProfile(studentObj: any) {
+function formatStudentProfile(studentObj) {
   return {
     name: studentObj.name,
     gpa: studentObj.gpa,
@@ -57,14 +50,30 @@ function formatStudentProfile(studentObj: any) {
   };
 }
 
-// Initialize Claude model
-const model = new ChatAnthropic({
-  modelName: "claude-sonnet-4-20250514",
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY,
-});
+// Helper function to process prompts with Gemini
+async function processWithGemini(prompt, input) {
+  try {
+    const formattedPrompt = await formatPrompt(prompt, input);
+    const result = await model.generateContent(formattedPrompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Error in processWithGemini:", error);
+    throw error;
+  }
+}
+
+// Format prompt with input variables
+async function formatPrompt(template, input) {
+  let prompt = template;
+  for (const [key, value] of Object.entries(input)) {
+    prompt = prompt.replace(new RegExp(`\\{${key}\\}`, 'g'), JSON.stringify(value, null, 2));
+  }
+  return prompt;
+}
 
 // Define prompt templates
-const scholarshipAnalysisPrompt = PromptTemplate.fromTemplate(`
+const scholarshipAnalysisPrompt = `
 Analyze this scholarship information and winner essay (if provided) to extract:
 1. Core values and themes
 2. Important keywords and phrases
@@ -85,10 +94,9 @@ Provide a structured JSON analysis with:
 - patterns: array of hidden patterns observed
 - weights: object mapping each value/theme to importance (0-10)
 
-Return ONLY valid JSON, no markdown or explanation.
-`);
+Return ONLY valid JSON, no markdown.`;
 
-const profileWeightsPrompt = PromptTemplate.fromTemplate(`
+const profileWeightsPrompt = `
 Based on this scholarship analysis, create a weighted scoring system for student profiles. 
 
 Scholarship Analysis:
@@ -99,10 +107,9 @@ Generate a JSON object with:
 - strengthCategories: categories of strengths that matter (academic, leadership, service, etc.)
 - scoringRubric: how to evaluate each criterion (0-10 scale)
 
- Return ONLY valid JSON.
-`);
+ Return ONLY valid JSON.`;
 
-const strengthEvaluationPrompt = PromptTemplate.fromTemplate(`
+const strengthEvaluationPrompt = `
 Evaluate this student profile against the weighted criteria.
 
 Student Profile:
@@ -118,10 +125,9 @@ Provide JSON with:
 - weakMatches: array of areas needing improvement
 - standoutQualities: unique aspects that stand out
 
-Return ONLY valid JSON.
-`);
+Return ONLY valid JSON.`;
 
-const essayGenerationPrompt = PromptTemplate.fromTemplate(`
+const essayGenerationPrompt = `
 Write a scholarship essay for this student that aligns with the weighted criteria.
 
 Student Profile:
@@ -161,45 +167,36 @@ Return JSON with:
 - valueAlignment: how essay maps to each weighted value
 - keywordUsage: list of strategic keywords used
 
-Do NOT use em dashes. Return ONLY valid JSON.
-`);
+Do NOT use em dashes. Return ONLY valid JSON.`;
 
-// Create processing chains
-const analysisChain = RunnableSequence.from([
-  scholarshipAnalysisPrompt,
-  model,
-  new StringOutputParser(),
-]);
+// Create chain functions
+async function analysisChain(input) {
+  return processWithGemini(scholarshipAnalysisPrompt, input);
+}
 
-const weightsChain = RunnableSequence.from([
-  profileWeightsPrompt,
-  model,
-  new StringOutputParser(),
-]);
+async function weightsChain(input) {
+  return processWithGemini(profileWeightsPrompt, input);
+}
 
-const evaluationChain = RunnableSequence.from([
-  strengthEvaluationPrompt,
-  model,
-  new StringOutputParser(),
-]);
+async function evaluationChain(input) {
+  return processWithGemini(strengthEvaluationPrompt, input);
+}
 
-const essayChain = RunnableSequence.from([
-  essayGenerationPrompt,
-  model,
-  new StringOutputParser(),
-]);
+async function essayChain(input) {
+  return processWithGemini(essayGenerationPrompt, input);
+}
 
 // Main workflow function
 async function processScholarshipApplication(
-  scholarshipInfo: string,
-  studentProfile: string,
-  essayRequirements: string = "500 words",
-  sampleStudentEssay: string = "",
-  winnerEssay: string = ""
+  scholarshipInfo,
+  studentProfile,
+  essayRequirements = "500 words",
+  sampleStudentEssay = "",
+  winnerEssay = ""
 ) {
   try {
     console.log("Step 1: Analyzing scholarship...");
-    const scholarshipAnalysisRaw = await analysisChain.invoke({
+    const scholarshipAnalysisRaw = await analysisChain({
       scholarshipInfo,
       winnerEssay,
     });
@@ -207,14 +204,14 @@ async function processScholarshipApplication(
     console.log("✓ Analysis complete");
 
     console.log("\nStep 2: Generating profile weights...");
-    const profileWeightsRaw = await weightsChain.invoke({
+    const profileWeightsRaw = await weightsChain({
       scholarshipAnalysis: JSON.stringify(scholarshipAnalysis),
     });
     const profileWeights = parseJSON(profileWeightsRaw);
     console.log("✓ Weights generated");
 
     console.log("\nStep 3: Evaluating student strengths...");
-    const studentEvaluationRaw = await evaluationChain.invoke({
+    const studentEvaluationRaw = await evaluationChain({
       studentProfile,
       profileWeights: JSON.stringify(profileWeights),
     });
@@ -223,7 +220,7 @@ async function processScholarshipApplication(
     console.log(`Total Score: ${studentEvaluation.totalScore}/100`);
 
     console.log("\nStep 4: Generating aligned essay...");
-    const essayOutputRaw = await essayChain.invoke({
+    const essayOutputRaw = await essayChain({
       studentProfile,
       scholarshipAnalysis: JSON.stringify(scholarshipAnalysis),
       studentEvaluation: JSON.stringify(studentEvaluation),
@@ -245,76 +242,44 @@ async function processScholarshipApplication(
   }
 }
 
-// Routes
-
-/**
- * POST /api/scholarship-essay
- * Generate a scholarship essay based on student profile and scholarship info
- * 
- * Request body:
- * {
- *   "scholarshipData": { scholarship object },
- *   "studentData": { student object },
- *   "essayRequirements": "string (optional)",
- *   "winnerEssay": "string (optional)"
- * }
- */
-app.post("/api/scholarship-essay", async (req: Request, res: Response) => {
+// Example usage
+async function main() {
   try {
-    const { scholarshipData, studentData, essayRequirements, winnerEssay } = req.body;
+    // Example data - replace with actual data
+    const scholarshipInfo = {
+      title: "Academic Excellence Scholarship",
+      description: "Awarded to students demonstrating exceptional academic achievement and leadership potential.",
+      requirements: {
+        minimumGPA: 3.5,
+        academicMerit: true,
+        financialNeed: false
+      }
+    };
 
-    // Validate required fields
-    if (!scholarshipData || !studentData) {
-      return res.status(400).json({
-        error: "Missing required fields: scholarshipData and studentData"
-      });
-    }
+    const studentProfile = {
+      name: "John Doe",
+      gpa: 3.8,
+      major: "Computer Science",
+      extracurriculars: ["Robotics Club President", "Volunteer Tutor"],
+      achievements: ["Dean's List 4 semesters", "Hackathon Winner"],
+      personalBackground: "First-generation college student passionate about AI and education.",
+      writingSample: ""
+    };
 
-    // Format the data
-    const formattedScholarshipInfo = JSON.stringify(
-      formatScholarshipData(scholarshipData),
-      null,
-      2
-    );
-    const formattedStudentProfile = JSON.stringify(
-      formatStudentProfile(studentData),
-      null,
-      2
-    );
-
-    // Process the application
+    console.log("Starting scholarship essay generation...");
     const result = await processScholarshipApplication(
-      formattedScholarshipInfo,
-      formattedStudentProfile,
-      essayRequirements || "500 words",
-      studentData.writingSample || "",
-      winnerEssay || ""
+      JSON.stringify(formatScholarshipData(scholarshipInfo), null, 2),
+      JSON.stringify(formatStudentProfile(studentProfile), null, 2),
+      "50 words"
     );
 
-    res.json({
-      success: true,
-      data: result
-    });
+    console.log("\nFinal Essay:");
+    console.log(JSON.stringify(result, null, 2));
+
   } catch (error) {
-    console.error("Error processing scholarship application:", error);
-    res.status(500).json({
-      error: "Failed to process scholarship application",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    console.error("Error in main:", error);
   }
-});
+}
 
-/**
- * GET /api/health
- * Health check endpoint
- */
-app.get("/api/health", (req: Request, res: Response) => {
-  res.json({ status: "Server is running" });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`POST /api/scholarship-essay - Generate scholarship essay`);
-  console.log(`GET /api/health - Health check`);
-});
+// Run the example
+main().catch(console.error);

@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
-import { ChatAnthropic } from "@langchain/anthropic";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
@@ -57,16 +57,14 @@ function formatStudentProfile(studentObj: any) {
   };
 }
 
-// Initialize Claude model
-const model = new ChatAnthropic({
-  modelName: "claude-sonnet-4-20250514",
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY,
-});
+// Initialize Google Gemini model
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Define prompt templates
 const scholarshipAnalysisPrompt = PromptTemplate.fromTemplate(`
 Analyze this scholarship information and winner essay (if provided) to extract:
-1. Core values and themes
+1. Core values and themes 
 2. Important keywords and phrases
 3. Areas of emphasis
 4. Hidden patterns in what they value
@@ -78,7 +76,7 @@ Winner Essay (if available):
 {winnerEssay}
 
 Provide a structured JSON analysis with:
-- values: array of core values 
+- values: array of core values
 - themes: array of major themes
 - keywords: array of important keywords
 - emphasis: array of areas they emphasize
@@ -89,7 +87,7 @@ Return ONLY valid JSON, no markdown or explanation.
 `);
 
 const profileWeightsPrompt = PromptTemplate.fromTemplate(`
-Based on this scholarship analysis, create a weighted scoring system for student profiles. 
+Based on this scholarship analysis, create a weighted scoring system for student profiles.
 
 Scholarship Analysis:
 {scholarshipAnalysis}
@@ -99,7 +97,7 @@ Generate a JSON object with:
 - strengthCategories: categories of strengths that matter (academic, leadership, service, etc.)
 - scoringRubric: how to evaluate each criterion (0-10 scale)
 
- Return ONLY valid JSON.
+Return ONLY valid JSON.
 `);
 
 const strengthEvaluationPrompt = PromptTemplate.fromTemplate(`
@@ -112,7 +110,7 @@ Weighted Criteria:
 {profileWeights}
 
 Provide JSON with:
-- scores: object with score, why it matters in one sentence and how the student meets this criterion in one sentence, for each criterion. The highest score must be above 30.
+- scores: object with score for each criterion
 - totalScore: weighted total score (0-100)
 - strongMatches: array of areas where student excels
 - weakMatches: array of areas needing improvement
@@ -140,13 +138,12 @@ Sample Student Essay:
 {sampleStudentEssay}
 
 Generate:
-1. A compelling essay according to essay requirements that:
+1. A concise, compelling essay that:
    - Emphasizes the student's strengths matching scholarship values
    - Uses keywords and themes from winning essays
    - Follows patterns identified in successful applications
-   - Tells an authentic story 
-   - Uses student's writing style and tone from their sample essay
-   - Shows more and tells less
+   - Tells an authentic story
+   - Uses the student's writing style and tone
 
 2. A detailed explanation of strategic choices:
    - Which values were emphasized and why
@@ -161,33 +158,33 @@ Return JSON with:
 - valueAlignment: how essay maps to each weighted value
 - keywordUsage: list of strategic keywords used
 
-Do NOT use em dashes. Return ONLY valid JSON.
+Return ONLY valid JSON.
 `);
 
-// Create processing chains
-const analysisChain = RunnableSequence.from([
-  scholarshipAnalysisPrompt,
-  model,
-  new StringOutputParser(),
-]);
+// Helper function to process prompts with Gemini
+async function processWithGemini(promptTemplate: any, input: Record<string, any>) {
+  const prompt = await promptTemplate.format(input);
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  return response.text();
+}
 
-const weightsChain = RunnableSequence.from([
-  profileWeightsPrompt,
-  model,
-  new StringOutputParser(),
-]);
+// Update processing functions to use Gemini
+const analysisChain = async (input: any) => {
+  return processWithGemini(scholarshipAnalysisPrompt, input);
+};
 
-const evaluationChain = RunnableSequence.from([
-  strengthEvaluationPrompt,
-  model,
-  new StringOutputParser(),
-]);
+const weightsChain = async (input: any) => {
+  return processWithGemini(profileWeightsPrompt, input);
+};
 
-const essayChain = RunnableSequence.from([
-  essayGenerationPrompt,
-  model,
-  new StringOutputParser(),
-]);
+const evaluationChain = async (input: any) => {
+  return processWithGemini(strengthEvaluationPrompt, input);
+};
+
+const essayChain = async (input: any) => {
+  return processWithGemini(essayGenerationPrompt, input);
+};
 
 // Main workflow function
 async function processScholarshipApplication(
@@ -199,7 +196,7 @@ async function processScholarshipApplication(
 ) {
   try {
     console.log("Step 1: Analyzing scholarship...");
-    const scholarshipAnalysisRaw = await analysisChain.invoke({
+    const scholarshipAnalysisRaw = await analysisChain({
       scholarshipInfo,
       winnerEssay,
     });
@@ -207,14 +204,14 @@ async function processScholarshipApplication(
     console.log("✓ Analysis complete");
 
     console.log("\nStep 2: Generating profile weights...");
-    const profileWeightsRaw = await weightsChain.invoke({
+    const profileWeightsRaw = await weightsChain({
       scholarshipAnalysis: JSON.stringify(scholarshipAnalysis),
     });
     const profileWeights = parseJSON(profileWeightsRaw);
     console.log("✓ Weights generated");
 
     console.log("\nStep 3: Evaluating student strengths...");
-    const studentEvaluationRaw = await evaluationChain.invoke({
+    const studentEvaluationRaw = await evaluationChain({
       studentProfile,
       profileWeights: JSON.stringify(profileWeights),
     });
@@ -223,7 +220,7 @@ async function processScholarshipApplication(
     console.log(`Total Score: ${studentEvaluation.totalScore}/100`);
 
     console.log("\nStep 4: Generating aligned essay...");
-    const essayOutputRaw = await essayChain.invoke({
+    const essayOutputRaw = await essayChain({
       studentProfile,
       scholarshipAnalysis: JSON.stringify(scholarshipAnalysis),
       studentEvaluation: JSON.stringify(studentEvaluation),

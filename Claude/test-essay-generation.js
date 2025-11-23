@@ -79,6 +79,7 @@ async function testEssayGeneration() {
       { timeout: 120000 } // 2 minute timeout
     );
 
+    console.log(JSON.stringify(essayResponse.data, null, 2))
     const endTime = Date.now();
     const processingTime = ((endTime - startTime) / 1000).toFixed(2);
 
