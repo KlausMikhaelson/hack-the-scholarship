@@ -1,0 +1,55 @@
+scholarship info + winner essay (if possible) --> values
+values-->weight
+student profile + weight --> strengths 
+
+student profile + strengths + scholarship info (for chosen scholarship) + student essay writing + weights--> essay aligned with weights + explanation
+
+
+{
+      "id": 31, (no need)
+      "title": "Andrew Bretz Memorial Scholarship I",
+      "description": "Awarded to Victoria College students who have achieved overall A standing and are pursuing studies in Drama or English or Renaissance Studies. Victoria College In-course Domestic;International Academic Merit, Other up to $1,000",
+      "gender": null,
+      "studentStatus": "in-course",
+      "studentType": "domestic", 
+      "faculty": null,
+      "fieldsOfStudy": [
+        "English"
+      ],
+      "requirements": {
+        "financialNeed": false,
+        "academicMerit": true,
+        "minimumGPA": null,
+        "citizenship": null, (no need)
+        "residency": null, (no need)
+        "enrollmentStatus": null, 
+        "other": []
+      },
+      "amountInfo" (no need): {
+        "value": null,
+        "currency": "CAD",
+        "type": "range",
+        "min": 1000,
+        "max": 1000
+      },
+      "amount": "up to $1,000", (no need)
+      "scrapedAt": "2025-11-23T00:20:49.791Z", (no need)
+      "source": "uoft_smartsimple", (no need)
+      "tags" (no need): [
+        "status:in-course",
+        "type:domestic",
+        "field:english",
+        "requirement:academic_merit",
+        "amount_type:range"
+      ]
+    }
+
+
+
+✓ name                  - Full name
+✓ gpa                   - GPA (0.0-4.0)
+✓ major                 - Major/field of study
+✓ extracurriculars      - Clubs, sports, volunteer work (textarea)
+✓ achievements          - Awards, honors, recognitions (textarea)
+✓ personalBackground    - Personal story, challenges, motivations (textarea)
+○ writingSample         - Generic essay for tone matching (textarea, optional)
