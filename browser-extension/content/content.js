@@ -258,7 +258,7 @@ async function handleFillFormWithAI(sendResponse) {
     updateProgressInPopup(80, 'Filling form fields...');
     
     // Fill form based on Claude's analysis
-    const result = fillFormWithAIAnalysis(analysisResult);
+    const result = await fillFormWithAIAnalysis(analysisResult);
     
     // Update progress: Complete
     updateProgressInPopup(100, 'Complete!');
@@ -285,7 +285,7 @@ function updateProgressInPopup(percent, text) {
   });
 }
 
-function fillFormWithAIAnalysis(analysis) {
+async function fillFormWithAIAnalysis(analysis) {
   // analysis should contain: { fields: [{ selector, value, fieldType }] }
   let filledCount = 0;
   
@@ -293,6 +293,31 @@ function fillFormWithAIAnalysis(analysis) {
     console.error('Invalid analysis result:', analysis);
     return { filledCount: 0, totalFields: 0 };
   }
+
+  // Get user data for fallback essay filling
+  let userData = null;
+  try {
+    userData = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'getUserData' }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (response.error) {
+          reject(new Error(response.error));
+        } else {
+          resolve(response.data);
+        }
+      });
+    });
+  } catch (error) {
+    console.warn('Could not fetch user data for fallback:', error);
+  }
+
+  // Detect essay fields for fallback
+  const detectedFields = detectFormFields();
+  const essayFields = detectedFields.essay || [];
+
+  // Track which essay fields were filled by AI
+  const filledEssayFields = new Set();
 
   analysis.fields.forEach(field => {
     try {
@@ -320,15 +345,48 @@ function fillFormWithAIAnalysis(analysis) {
         }
       }
       
+      // Check if this is an essay field
+      const isEssayField = element && (
+        field.fieldType === 'textarea' && (
+          field.label?.toLowerCase().includes('essay') ||
+          field.label?.toLowerCase().includes('personal statement') ||
+          field.label?.toLowerCase().includes('statement') ||
+          field.id?.toLowerCase().includes('essay') ||
+          field.name?.toLowerCase().includes('essay')
+        )
+      );
+
       if (element && field.value) {
         if (fillField(element, field.value)) {
           filledCount++;
+          if (isEssayField) {
+            filledEssayFields.add(element);
+          }
         }
       }
     } catch (error) {
       console.error('Error filling field:', field, error);
     }
   });
+
+  // Fallback: Fill essay fields that weren't filled by AI
+  if (userData && essayFields.length > 0) {
+    const essayText = userData.personalBackground || userData.writingSample || '';
+    if (essayText) {
+      essayFields.forEach(field => {
+        // Skip if already filled by AI
+        if (filledEssayFields.has(field.element)) {
+          return;
+        }
+        
+        // Fill with user's personal background or writing sample
+        if (fillField(field.element, essayText)) {
+          filledCount++;
+          console.log('Filled essay field using fallback:', field.id || field.name);
+        }
+      });
+    }
+  }
 
   return { filledCount, totalFields: analysis.fields.length };
 }
@@ -379,8 +437,16 @@ function detectFormFields() {
     if (matchesPattern(combined, ['achievement', 'award', 'honor', 'recognition', 'accomplishment'])) {
       fields.achievements.push({ element: input, type: input.type, name: input.name, id: input.id });
     }
-    if (matchesPattern(combined, ['essay', 'personal statement', 'background', 'biography', 'bio', 'statement', 'why', 'describe'])) {
-      fields.essay.push({ element: input, type: input.type, name: input.name, id: input.id });
+    // Check for essay/personal statement fields
+    const isEssayField = matchesPattern(combined, ['essay', 'personal statement', 'background', 'biography', 'bio', 'statement', 'why', 'describe', 'personal background', 'tell us about', 'narrative']) ||
+                         (input.tagName === 'TEXTAREA' && (id.includes('essay') || name.includes('essay')));
+    
+    if (isEssayField) {
+      // Avoid duplicates
+      const alreadyAdded = fields.essay.some(f => f.element === input);
+      if (!alreadyAdded) {
+        fields.essay.push({ element: input, type: input.type, name: input.name, id: input.id });
+      }
     }
   });
 
@@ -508,28 +574,28 @@ function matchesPattern(text, patterns) {
 }
 
 function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
     background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#667eea'};
-    color: white;
-    padding: 12px 20px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    z-index: 10000;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
     max-width: 300px;
-  `;
+    `;
   notification.textContent = message;
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
     notification.style.opacity = '0';
     notification.style.transition = 'opacity 0.3s';
     setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
+    }, 3000);
+  }
 

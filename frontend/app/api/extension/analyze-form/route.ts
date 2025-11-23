@@ -240,14 +240,27 @@ Match user profile fields to form fields:
 - major -> Major/Field of Study fields
 - extracurriculars -> Extracurricular Activities fields
 - achievements -> Awards/Achievements fields
-- personalBackground or writingSample -> Essay/Personal Statement/Background fields
+- personalBackground or writingSample -> Essay/Personal Statement/Background fields (PRIORITY: Use personalBackground if available, otherwise writingSample. For essay fields, provide a well-written personal statement that combines the user's background, achievements, and goals. If the field asks for a personal statement or essay, create a compelling narrative that highlights the user's strengths and experiences.)
+
+CRITICAL FOR ESSAY/PERSONAL STATEMENT FIELDS:
+- If you find fields labeled "essay", "personal statement", "personal background", "statement", "why", "describe yourself", or similar:
+  - Create a well-written personal statement (300-500 words) that:
+    * Opens with a compelling hook or personal story
+    * Incorporates the user's personalBackground
+    * Highlights their achievements and extracurriculars
+    * Shows their goals and aspirations
+    * Demonstrates why they deserve the scholarship
+  - Use the user's writingSample as a style reference for tone and voice
+  - Make it authentic and specific, not generic
 
 IMPORTANT: 
 - Return ONLY valid JSON, no markdown code blocks, no explanations before or after
 - Escape all quotes in string values (use \\" for quotes inside strings)
+- Escape newlines in essay text with \\n
 - Do not include trailing commas
 - Use precise CSS selectors based on the HTML structure (id, name, class, type attributes)
 - Only include fields you can confidently identify and match
+- For essay fields, ensure the value is a complete, well-written personal statement
 - If no fields match, return: {"fields": []}`;
 
     // Create HumanMessage with text content only (no image needed)
