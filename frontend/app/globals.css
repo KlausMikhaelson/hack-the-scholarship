@@ -13,13 +13,15 @@
   margin: 0;
 }
 
-html,
-body {
+html {
+  overflow-y: scroll; /* Force scrollbar to always show */
   max-width: 100vw;
   overflow-x: hidden;
 }
 
 body {
+  max-width: 100vw;
+  overflow-x: hidden;
   color: var(--foreground);
   background: var(--background);
   background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
