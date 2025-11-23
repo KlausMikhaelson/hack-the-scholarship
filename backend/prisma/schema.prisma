@@ -10,12 +10,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Example model - replace with your actual models
-model Example {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model User {
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  name                String
+  onboardingCompleted Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  profile             UserProfile?
+  applications        Application[]
 }
 
+model UserProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gpa                String
+  major              String
+  extracurriculars   String
+  achievements       String
+  personalBackground String
+  writingSample      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Scholarship {
+  id           String        @id @default(uuid())
+  name         String
+  description  String
+  deadline     DateTime?
+  sourceUrl    String?
+  isPreloaded  Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
+}
+
+model Application {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId         String
+  scholarship           Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  generatedEssay        String
+  editedEssay           String?
+  explainabilityMatrix  Json
+  adaptiveWeights       Json
+  scholarshipPersonality Json
+  strengthMapping       Json
+  status                ApplicationStatus @default(DRAFT)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId, scholarshipId])
+}
+
+enum ApplicationStatus {
+  DRAFT
+  IN_PROGRESS
+  SUBMITTED
+  ARCHIVED
+}
