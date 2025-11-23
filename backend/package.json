@@ -9,22 +9,27 @@
     "start": "node src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "scrape:test": "node src/scripts/test-scraper.js",
+    "scrape:test:cheerio": "FORCE_CHEERIO=true node src/scripts/test-scraper.js",
+    "parse:scholarships": "node src/scripts/parse-scholarships.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.7.1",
-    "express": "^4.18.2",
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "helmet": "^7.1.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "puppeteer": "^21.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
     "prisma": "^5.7.1"
   }
 }
-
