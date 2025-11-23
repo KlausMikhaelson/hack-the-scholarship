@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Award, FileText, User } from 'lucide-react';
+import { Home, Award, FileText, User, GitCompare } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -67,10 +67,20 @@ export default function Navigation() {
               <User className="w-4 h-4" />
               Profile
             </Link>
+            <Link
+              href="/compare"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/compare')
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <GitCompare className="w-4 h-4" />
+              Compare
+            </Link>
           </div>
         </div>
       </div>
     </nav>
   );
 }
-

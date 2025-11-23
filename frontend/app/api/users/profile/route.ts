@@ -42,17 +42,39 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      // Create new user if doesn't exist, sync from Clerk
-      user = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: clerkEmail,
-          name: clerkName,
-          firstName: clerkFirstName,
-          lastName: clerkLastName,
-          onboardingCompleted: false,
-        },
-      });
+      // Check if user exists by email (in case clerkId wasn't set before)
+      if (clerkEmail) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: clerkEmail },
+        });
+
+        if (existingUser) {
+          // Update existing user with clerkId
+          user = await prisma.user.update({
+            where: { email: clerkEmail },
+            data: {
+              clerkId: userId,
+              name: clerkName || existingUser.name,
+              firstName: clerkFirstName || existingUser.firstName,
+              lastName: clerkLastName || existingUser.lastName,
+            },
+          });
+        }
+      }
+
+      // If still no user, create new one
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            clerkId: userId,
+            email: clerkEmail,
+            name: clerkName,
+            firstName: clerkFirstName,
+            lastName: clerkLastName,
+            onboardingCompleted: false,
+          },
+        });
+      }
     } else {
       // Update existing user with latest Clerk data
       user = await prisma.user.update({

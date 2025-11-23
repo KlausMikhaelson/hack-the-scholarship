@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,14 +15,21 @@ import {
 
 export default function Home() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
-  // Redirect signed-in users to dashboard
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
+    // Check if user has completed onboarding
+    const onboardingCompleted = localStorage.getItem("onboardingCompleted");
+    setHasProfile(onboardingCompleted === "true");
+  }, []);
+
+  const handleGetStarted = () => {
+    if (hasProfile) {
       router.push("/dashboard");
+    } else {
+      router.push("/onboarding");
     }
-  }, [isLoaded, isSignedIn, router]);
+  };
 
   return (
     <div className="min-h-screen">
@@ -39,34 +45,24 @@ export default function Home() {
         </h1>
 
         <p className="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-        One profile. Unlimited scholarships. <br />
-        Claude crafts the perfect essays for every opportunity.
+          One profile. Unlimited scholarships. <br />
+          Claude crafts the perfect essays for every opportunity.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          {isSignedIn ? (
-            <Link
-              href="/apply"
-              className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
-            >
-              Start Application
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          ) : (
-            <>
-              <SignUpButton mode="modal" forceRedirectUrl="/onboarding">
-                <button className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow">
-                  Get Started
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </SignUpButton>
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <button className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm">
-                  View Dashboard
-                </button>
-              </SignInButton>
-            </>
-          )}
+          <button
+            onClick={handleGetStarted}
+            className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
+          >
+            Get Started
+            <ArrowRight className="w-4 h-4" />
+          </button>
+          <Link
+            href="/dashboard"
+            className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            View Dashboard
+          </Link>
         </div>
       </div>
 

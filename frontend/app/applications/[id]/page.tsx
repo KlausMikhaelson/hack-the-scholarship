@@ -1,35 +1,105 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Download, Copy, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Download, Copy, Check, Sparkles, Loader2 } from 'lucide-react';
 
 export default function ApplicationDetailPage() {
   const params = useParams();
   const applicationId = params.id as string;
 
-  const [essay, setEssay] = useState(`As a Computer Science student with a 3.8 GPA, I am deeply passionate about leveraging my skills to create meaningful impact in my community and beyond. The Gates Millennium Scholarship aligns perfectly with my values and aspirations.
-
-Throughout my academic journey, I have consistently demonstrated excellence not just in the classroom, but in applying my knowledge to real-world challenges. My work as Robotics Club Captain exemplifies my commitment to innovation and pushing boundaries.
-
-Leadership has been a cornerstone of my personal development. Through my volunteer tutoring work, I have learned the importance of collaboration, empathy, and inspiring others to work toward common goals.`);
-  
+  const [essay, setEssay] = useState('');
+  const [scholarshipName, setScholarshipName] = useState('');
+  const [status, setStatus] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [showAiMenu, setShowAiMenu] = useState(false);
-  const [aiMenuPosition, setAiMenuPosition] = useState({ x: 0, y: 0 });
+  const [aiMenuPosition, setAiMenuPosition] = useState({ x: 100, y: 100 });
+  const [isImproving, setIsImproving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchApplication() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch(`/api/applications/${applicationId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch application');
+        }
+        
+        const data = await response.json();
+        const app = data.application;
+        
+        setScholarshipName(app.scholarshipName || 'Unknown Scholarship');
+        setStatus(app.status || 'DRAFT');
+        setEssay(app.editedEssay || app.generatedEssay || '');
+        setLastSaved(app.updatedAt ? new Date(app.updatedAt) : null);
+      } catch (err) {
+        console.error('Application fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load application');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (applicationId) {
+      fetchApplication();
+    }
+  }, [applicationId]);
+
+  // Close AI menu when clicking outside
+  useEffect(() => {
+    if (!showAiMenu) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Don't close if clicking on the menu itself
+      if (target.closest('[data-ai-menu]')) {
+        return;
+      }
+      // Don't close if clicking in the textarea (selection might be happening)
+      if (target.tagName === 'TEXTAREA' || target.closest('textarea')) {
+        return;
+      }
+      setShowAiMenu(false);
+    };
+
+    // Use a small delay to avoid closing immediately when selection happens
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [showAiMenu]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch(`/api/applications/${applicationId}`, {
+      const response = await fetch(`/api/applications/${applicationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ editedEssay: essay }),
+        body: JSON.stringify({ 
+          editedEssay: essay,
+          status: status === 'DRAFT' ? 'IN_PROGRESS' : status,
+        }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save');
+      }
+      
+      setLastSaved(new Date());
+      setStatus('IN_PROGRESS');
       alert('Essay saved!');
     } catch (error) {
       alert('Failed to save');
@@ -37,6 +107,55 @@ Leadership has been a cornerstone of my personal development. Through my volunte
       setIsSaving(false);
     }
   };
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return '';
+    const now = new Date();
+    const diffInMs = now.getTime() - lastSaved.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    return lastSaved.toLocaleDateString();
+  };
+
+  if (isLoading) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-gray-500">Loading application...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Link
+              href="/applications"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Applications
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(essay);
@@ -54,34 +173,173 @@ Leadership has been a cornerstone of my personal development. Through my volunte
     URL.revokeObjectURL(url);
   };
 
-  const handleTextSelection = () => {
-    const selection = window.getSelection();
-    const text = selection?.toString();
-    
-    if (text && text.length > 0) {
-      setSelectedText(text);
-      const range = selection?.getRangeAt(0);
-      const rect = range?.getBoundingClientRect();
-      if (rect) {
-        setAiMenuPosition({ x: rect.left, y: rect.bottom + window.scrollY });
-        setShowAiMenu(true);
+  const handleTextSelection = (e?: React.SyntheticEvent) => {
+    // Small delay to ensure selection is complete
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+      if (!textarea) {
+        setShowAiMenu(false);
+        return;
       }
-    } else {
-      setShowAiMenu(false);
-    }
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = textarea.value.substring(start, end).trim();
+      
+      console.log('Selection text:', selectedText, 'Length:', selectedText.length);
+      
+      if (selectedText && selectedText.length > 0) {
+        setSelectedText(selectedText);
+        
+        try {
+          // For textarea, we need to calculate position based on cursor position
+          // Create a mirror div to measure text position
+          const textareaRect = textarea.getBoundingClientRect();
+          const textareaStyle = window.getComputedStyle(textarea);
+          
+          // Get the text before selection to calculate line/column
+          const textBeforeSelection = textarea.value.substring(0, start);
+          const lines = textBeforeSelection.split('\n');
+          const currentLine = lines.length - 1;
+          const currentColumn = lines[currentLine]?.length || 0;
+          
+          // Create a temporary span to measure text position
+          const mirror = document.createElement('div');
+          mirror.style.position = 'absolute';
+          mirror.style.visibility = 'hidden';
+          mirror.style.whiteSpace = 'pre-wrap';
+          mirror.style.font = textareaStyle.font;
+          mirror.style.fontSize = textareaStyle.fontSize;
+          mirror.style.fontFamily = textareaStyle.fontFamily;
+          mirror.style.lineHeight = textareaStyle.lineHeight;
+          mirror.style.padding = textareaStyle.padding;
+          mirror.style.border = textareaStyle.border;
+          mirror.style.width = textareaStyle.width;
+          mirror.style.wordWrap = 'break-word';
+          mirror.textContent = textBeforeSelection;
+          
+          document.body.appendChild(mirror);
+          
+          // Get the position of the selection start
+          const span = document.createElement('span');
+          span.textContent = selectedText.substring(0, 1) || '|';
+          mirror.appendChild(span);
+          
+          const spanRect = span.getBoundingClientRect();
+          const mirrorRect = mirror.getBoundingClientRect();
+          
+          document.body.removeChild(mirror);
+          
+          // Calculate position relative to textarea
+          const menuHeight = 220;
+          const menuWidth = 180;
+          const padding = 10;
+          const gap = 8;
+          
+          // Position near the selection (use textarea position + estimated selection position)
+          let x = textareaRect.left + padding;
+          let y = textareaRect.top + (currentLine * parseFloat(textareaStyle.lineHeight) || 20) + gap;
+          
+          // Adjust to keep within viewport
+          if (x + menuWidth + padding > window.innerWidth) {
+            x = window.innerWidth - menuWidth - padding;
+          }
+          if (x < padding) {
+            x = padding;
+          }
+          
+          const spaceBelow = window.innerHeight - y;
+          const spaceAbove = y - menuHeight;
+          
+          if (spaceBelow < menuHeight + gap && spaceAbove >= menuHeight + gap) {
+            // Position above
+            y = y - menuHeight - gap;
+          } else {
+            // Position below
+            y = y + gap;
+          }
+          
+          // Ensure coordinates are valid and within viewport
+          x = Math.max(padding, Math.min(x, window.innerWidth - menuWidth - padding));
+          y = Math.max(padding, Math.min(y, window.innerHeight - menuHeight - padding));
+          
+          console.log('Setting menu position:', { x, y });
+          setAiMenuPosition({ x, y });
+          setShowAiMenu(true);
+        } catch (error) {
+          console.error('Error calculating position:', error);
+          // Fallback: position near textarea
+          const textareaRect = textarea.getBoundingClientRect();
+          setAiMenuPosition({ 
+            x: textareaRect.left + 10, 
+            y: textareaRect.top + 50 
+          });
+          setShowAiMenu(true);
+        }
+      } else {
+        setShowAiMenu(false);
+      }
+    }, 100);
   };
 
   const handleAiImprove = async (mode: string) => {
-    const improvementMap: Record<string, string> = {
-      clearer: 'Make this clearer and more direct',
-      emotional: 'Make this more emotional and personal',
-      academic: 'Make this more formal and academic',
-      simpler: 'Simplify this language',
-    };
+    if (!selectedText || selectedText.trim().length === 0) {
+      alert('Please select some text first');
+      setShowAiMenu(false);
+      return;
+    }
 
-    // Mock AI improvement
-    alert(`AI would improve the selected text to be ${mode}. (API integration pending)`);
-    setShowAiMenu(false);
+    try {
+      setIsImproving(true);
+      setShowAiMenu(false);
+      
+      const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+      if (!textarea) {
+        setIsImproving(false);
+        return;
+      }
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const originalText = textarea.value.substring(start, end);
+
+      // Call the improvement API
+      const response = await fetch('/api/essay/improve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedText: originalText,
+          mode,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to improve text');
+      }
+
+      const data = await response.json();
+      const improvedText = data.improvedText;
+
+      // Replace the selected text with improved text
+      const textBefore = textarea.value.substring(0, start);
+      const textAfter = textarea.value.substring(end);
+      const newText = textBefore + improvedText + textAfter;
+
+      setEssay(newText);
+
+      // Restore selection to the improved text
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start, start + improvedText.length);
+        setIsImproving(false);
+      }, 10);
+
+    } catch (error) {
+      console.error('Improvement error:', error);
+      setIsImproving(false);
+      alert(error instanceof Error ? error.message : 'Failed to improve text. Please try again.');
+    }
   };
 
   return (
@@ -101,12 +359,19 @@ Leadership has been a cornerstone of my personal development. Through my volunte
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#111] mb-2">Gates Millennium Scholarship</h1>
+              <h1 className="text-2xl font-bold text-[#111] mb-2">{scholarshipName}</h1>
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
-                  IN PROGRESS
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                  status === 'DRAFT' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                  status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                  status === 'SUBMITTED' ? 'bg-green-50 text-green-700 border-green-200' :
+                  'bg-gray-50 text-gray-500 border-gray-200'
+                }`}>
+                  {status.replace('_', ' ')}
                 </span>
-                <span className="text-sm text-gray-500">Last saved 5 minutes ago</span>
+                {lastSaved && (
+                  <span className="text-sm text-gray-500">Last saved {formatLastSaved()}</span>
+                )}
               </div>
             </div>
 
@@ -138,21 +403,50 @@ Leadership has been a cornerstone of my personal development. Through my volunte
         </div>
 
         {/* Editor */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden relative">
           <div className="border-b border-gray-200 px-6 py-3 bg-gray-50 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700">Essay Editor</h2>
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-500">Select text for AI suggestions</span>
+              {isImproving ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  <span className="text-xs text-blue-600">Improving text...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs text-gray-500">Select text for AI suggestions</span>
+                </>
+              )}
             </div>
           </div>
           
-          <div className="p-8">
+          <div className="p-8 relative">
+            {isImproving && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                  <p className="text-sm text-gray-600">AI is improving your text...</p>
+                </div>
+              </div>
+            )}
             <textarea
               value={essay}
               onChange={(e) => setEssay(e.target.value)}
               onMouseUp={handleTextSelection}
-              className="w-full min-h-[500px] border-0 focus:ring-0 outline-none text-gray-800 leading-relaxed resize-y"
+              onKeyUp={handleTextSelection}
+              onSelect={handleTextSelection}
+              onMouseDown={() => {
+                // Clear selection when clicking
+                setTimeout(() => {
+                  const selection = window.getSelection();
+                  if (selection && selection.toString().trim().length === 0) {
+                    setShowAiMenu(false);
+                  }
+                }, 100);
+              }}
+              disabled={isImproving}
+              className="w-full min-h-[500px] border-0 focus:ring-0 outline-none text-gray-800 leading-relaxed resize-y disabled:opacity-50"
               style={{ fontSize: '15px', lineHeight: '1.7' }}
             />
           </div>
@@ -161,34 +455,43 @@ Leadership has been a cornerstone of my personal development. Through my volunte
         {/* AI Suggestion Menu */}
         {showAiMenu && (
           <div
-            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50"
-            style={{ left: aiMenuPosition.x, top: aiMenuPosition.y + 8 }}
+            data-ai-menu
+            className="fixed bg-white border-2 border-blue-300 rounded-lg shadow-2xl p-2 z-[9999] min-w-[180px]"
+            style={{ 
+              left: `${aiMenuPosition.x}px`, 
+              top: `${aiMenuPosition.y}px`,
+              position: 'fixed',
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-xs text-gray-500 px-2 py-1 mb-1">Improve with AI</p>
-            <button
-              onClick={() => handleAiImprove('clearer')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            >
-              Make clearer
-            </button>
-            <button
-              onClick={() => handleAiImprove('emotional')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            >
-              More emotional
-            </button>
-            <button
-              onClick={() => handleAiImprove('academic')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            >
-              More academic
-            </button>
-            <button
-              onClick={() => handleAiImprove('simpler')}
-              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            >
-              Simplify
-            </button>
+              <p className="text-xs font-medium text-gray-700 px-2 py-1.5 mb-1 border-b border-gray-100">Improve with AI</p>
+              <div className="py-1">
+                <button
+                  onClick={() => handleAiImprove('clearer')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                >
+                  Make clearer
+                </button>
+                <button
+                  onClick={() => handleAiImprove('emotional')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                >
+                  More emotional
+                </button>
+                <button
+                  onClick={() => handleAiImprove('academic')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                >
+                  More academic
+                </button>
+                <button
+                  onClick={() => handleAiImprove('simpler')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                >
+                Simplify
+              </button>
+            </div>
           </div>
         )}
       </div>

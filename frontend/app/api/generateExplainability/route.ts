@@ -1,51 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ChatAnthropic } from "@langchain/anthropic";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { RunnableSequence } from "@langchain/core/runnables";
+
+// Helper function to parse JSON
+function parseJSON(jsonString: string): any {
+  let cleaned = jsonString.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.replace(/^```json\n?/, "").replace(/\n?```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```\n?/, "").replace(/\n?```$/, "");
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("JSON parse error:", error);
+    throw error;
+  }
+}
+
+// Initialize Claude model
+const model = new ChatAnthropic({
+  modelName: "claude-sonnet-4-20250514",
+  apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY,
+});
+
+const explainabilityPrompt = PromptTemplate.fromTemplate(`
+Generate detailed explainability for each weighted criterion in this scholarship application.
+
+Student Profile:
+{studentProfile}
+
+Scholarship Analysis:
+{scholarshipAnalysis}
+
+Adaptive Weights:
+{weights}
+
+Generated Essay:
+{essay}
+
+For each weighted criterion, provide:
+- value: the criterion name
+- weight: the weight percentage
+- whyItMatters: explanation of why this criterion matters for THIS specific scholarship type (2-3 sentences)
+- howStudentMeetsIt: specific evidence from student profile showing how they meet this criterion (2-3 sentences)
+- essayIntegration: explanation of how this criterion was integrated into the essay
+- strategicChoice: explanation of why this angle was chosen over alternatives
+
+Return JSON with:
+- explainability: array of explainability objects for each weight
+- overallStrategy: explanation of the overall strategic approach
+- keyDecisions: array of key strategic decisions made
+
+Return ONLY valid JSON.
+`);
+
+const explainabilityChain = RunnableSequence.from([
+  explainabilityPrompt,
+  model,
+  new StringOutputParser(),
+]);
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { student, scholarship, weights } = body;
+    const { student, scholarship, weights, essay, scholarshipAnalysis } = body;
 
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (!student || !scholarship || !weights || !essay) {
+      return NextResponse.json(
+        { error: 'Student, scholarship, weights, and essay are required' },
+        { status: 400 }
+      );
+    }
 
-    const explainability = [
-      {
-        value: 'Academic Excellence',
-        weight: 0.35,
-        whyItMatters: 'The scholarship emphasizes strong academic performance as a foundation for future success and leadership potential.',
-        howStudentMeetsIt: `${student.name} maintains a ${student.gpa} GPA while studying ${student.major}, demonstrating consistent academic dedication.`
-      },
-      {
-        value: 'Leadership',
-        weight: 0.25,
-        whyItMatters: 'Leadership ability is crucial for creating positive change and inspiring others to contribute to their communities.',
-        howStudentMeetsIt: `Through various activities, ${student.name} has shown initiative in guiding teams and taking on responsibility.`
-      },
-      {
-        value: 'Innovation',
-        weight: 0.20,
-        whyItMatters: 'The scholarship seeks students who think creatively and develop novel solutions to complex problems.',
-        howStudentMeetsIt: `Achievements demonstrate creative problem-solving and technical innovation.`
-      },
-      {
-        value: 'Community Service',
-        weight: 0.15,
-        whyItMatters: 'Commitment to service reflects values of empathy, social responsibility, and desire to make a positive impact.',
-        howStudentMeetsIt: 'Active involvement in community-oriented activities shows dedication to serving others.'
-      },
-      {
-        value: 'Personal Growth',
-        weight: 0.05,
-        whyItMatters: 'Demonstrated resilience and ability to learn from challenges indicates strong character and future potential.',
-        howStudentMeetsIt: 'Personal journey shows continuous growth and determination.'
-      }
-    ];
+    // Generate explainability
+    const explainabilityRaw = await explainabilityChain.invoke({
+      studentProfile: typeof student === 'string' ? student : JSON.stringify(student, null, 2),
+      scholarshipAnalysis: typeof scholarshipAnalysis === 'string' 
+        ? scholarshipAnalysis 
+        : JSON.stringify(scholarshipAnalysis || scholarship, null, 2),
+      weights: typeof weights === 'string' ? weights : JSON.stringify(weights, null, 2),
+      essay: typeof essay === 'string' ? essay : essay,
+    });
 
-    return NextResponse.json({ explainability });
+    const explainabilityData = parseJSON(explainabilityRaw);
+
+    return NextResponse.json({
+      explainability: explainabilityData.explainability || [],
+      overallStrategy: explainabilityData.overallStrategy || '',
+      keyDecisions: explainabilityData.keyDecisions || [],
+    });
   } catch (error) {
     console.error('Explainability generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate explainability' },
+      { error: 'Failed to generate explainability', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

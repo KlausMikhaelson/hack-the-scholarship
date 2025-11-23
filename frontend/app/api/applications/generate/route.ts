@@ -1,159 +1,173 @@
 import { NextRequest, NextResponse } from 'next/server';
-import scholarshipsData from '@/data/sample_scholarships.json';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/prisma';
+import { processScholarshipApplication } from '@/lib/claude';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { scholarshipId, profileId } = body;
+    const { userId } = await auth();
 
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Get scholarship
-    const scholarship = scholarshipsData.find(s => s.id === scholarshipId);
-    
-    if (!scholarship) {
-      return NextResponse.json({ error: 'Scholarship not found' }, { status: 404 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    // Mock user profile (in production, fetch from DB)
-    const mockProfile = {
-      name: 'John Doe',
-      gpa: '3.8',
-      major: 'Computer Science',
-      extracurriculars: 'Robotics Club Captain, Volunteer Tutor',
-      achievements: 'National Merit Scholar, Hackathon Winner',
-      personalBackground: 'First-generation college student passionate about using technology for social good.',
-      writingSample: '',
+    const body = await request.json();
+    const { scholarshipId } = body;
+
+    if (!scholarshipId) {
+      return NextResponse.json(
+        { error: 'Scholarship ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch scholarship from database
+    const scholarship = await prisma.scholarship.findUnique({
+      where: { id: scholarshipId },
+    });
+
+    if (!scholarship) {
+      return NextResponse.json(
+        { error: 'Scholarship not found' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch user profile from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { profile: true },
+    });
+
+    if (!user || !user.profile) {
+      return NextResponse.json(
+        { error: 'User profile not found. Please complete onboarding first.' },
+        { status: 404 }
+      );
+    }
+
+    // Get Clerk user data for name
+    const clerkUser = await currentUser();
+    const userName = clerkUser?.fullName || 
+      `${clerkUser?.firstName || ''} ${clerkUser?.lastName || ''}`.trim() || 
+      user.name || 
+      'Student';
+
+    // Format student profile
+    const studentProfile = {
+      name: userName,
+      gpa: user.profile.gpaString || user.profile.gpa.toString(),
+      major: user.profile.major,
+      extracurriculars: user.profile.extracurriculars,
+      achievements: user.profile.achievements,
+      personalBackground: user.profile.personalBackground,
+      writingSample: user.profile.writingSample || '',
     };
 
-    // Generate pipeline result
+    // Format scholarship info for Claude
+    const scholarshipInfo = JSON.stringify({
+      name: scholarship.name,
+      description: scholarship.description,
+      deadline: scholarship.deadline,
+      requirements: {
+        minimumGPA: scholarship.minimumGPA,
+        financialNeed: scholarship.financialNeed,
+        academicMerit: scholarship.academicMerit,
+        fieldsOfStudy: scholarship.fieldsOfStudy,
+        studentStatus: scholarship.studentStatus,
+        studentType: scholarship.studentType,
+      },
+    }, null, 2);
+
+    // Format student profile for Claude
+    const studentProfileStr = JSON.stringify(studentProfile, null, 2);
+
+    // Process through Claude pipeline
+    const pipelineResult = await processScholarshipApplication(
+      scholarshipInfo,
+      studentProfileStr,
+      "500 words",
+      studentProfile.writingSample || "",
+      [] // TODO: Add winner essays when pattern miner is implemented
+    );
+
+    // Format response - profileWeights returns criteria array, convert to weights format
+    const criteria = pipelineResult.profileWeights.criteria || [];
+    const adaptiveWeights = criteria.map((criterion: any) => ({
+      label: criterion.name || criterion.label || criterion.criterion || 'Unknown',
+      weight: criterion.weight || 0,
+    }));
+
+    // Calculate total weight and normalize if needed
+    const totalWeight = adaptiveWeights.reduce((sum: number, w: any) => sum + (w.weight || 0), 0);
+    if (totalWeight > 0 && Math.abs(totalWeight - 1.0) > 0.01) {
+      // Normalize weights to sum to 1.0
+      adaptiveWeights.forEach((w: any) => {
+        w.weight = w.weight / totalWeight;
+      });
+    }
+
+    // Format response
     const result = {
       scholarshipPersonality: {
-        extractedValues: [
-          'Innovation and Creativity',
-          'Community Impact',
-          'Academic Excellence',
-          'Leadership Potential',
-          'Diversity and Inclusion'
-        ],
-        priorityThemes: [
-          'Technical Innovation',
-          'Problem-Solving Mindset',
-          'Social Responsibility',
-          'Collaborative Leadership'
-        ],
-        hiddenPatterns: [
-          'Emphasis on real-world application of skills',
-          'Preference for interdisciplinary approaches',
-          'Focus on sustainable and scalable solutions',
-          'Value placed on mentorship and giving back'
-        ]
+        extractedValues: pipelineResult.scholarshipAnalysis.values || [],
+        priorityThemes: pipelineResult.scholarshipAnalysis.themes || [],
+        hiddenPatterns: pipelineResult.scholarshipAnalysis.patterns || [],
+        keywords: pipelineResult.scholarshipAnalysis.keywords || [],
+        emphasis: pipelineResult.scholarshipAnalysis.emphasis || [],
       },
-      adaptiveWeights: [
-        { label: 'Academic Excellence', weight: 0.35 },
-        { label: 'Leadership', weight: 0.25 },
-        { label: 'Innovation', weight: 0.20 },
-        { label: 'Community Service', weight: 0.15 },
-        { label: 'Personal Growth', weight: 0.05 }
-      ],
+      adaptiveWeights: adaptiveWeights,
       strengthMapping: [
-        {
-          scholarshipValue: 'Leadership',
-          studentStrength: 'Robotics Club Captain',
-          evidence: 'Demonstrated through extracurricular activities'
-        },
-        {
-          scholarshipValue: 'Innovation',
-          studentStrength: 'Hackathon Winner',
-          evidence: 'Highlighted in achievements section'
-        },
-        {
-          scholarshipValue: 'Academic Excellence',
-          studentStrength: `${mockProfile.gpa} GPA in ${mockProfile.major}`,
-          evidence: 'Strong academic record'
-        },
-        {
-          scholarshipValue: 'Community Impact',
-          studentStrength: 'Volunteer Tutor',
-          evidence: 'Personal background and extracurriculars'
-        },
-        {
-          scholarshipValue: 'First-Gen Student',
-          studentStrength: 'First-generation college student',
-          evidence: 'Personal background narrative'
-        }
+        ...(pipelineResult.studentEvaluation.strongMatches || []).map((match: string) => ({
+          scholarshipValue: match,
+          studentStrength: match,
+          evidence: `Student excels in ${match.toLowerCase()}`,
+        })),
+        ...(pipelineResult.studentEvaluation.standoutQualities || []).map((quality: string) => ({
+          scholarshipValue: quality,
+          studentStrength: quality,
+          evidence: `Student demonstrates ${quality.toLowerCase()}`,
+        })),
       ],
-      tailoredEssay: generateEssay(mockProfile, scholarship),
-      explainability: [
-        {
-          value: 'Academic Excellence',
-          weight: 0.35,
-          whyItMatters: 'The scholarship emphasizes strong academic performance as a foundation for future success.',
-          howStudentMeetsIt: `${mockProfile.name} maintains a ${mockProfile.gpa} GPA while studying ${mockProfile.major}.`
-        },
-        {
-          value: 'Leadership',
-          weight: 0.25,
-          whyItMatters: 'Leadership ability is crucial for creating positive change and inspiring others.',
-          howStudentMeetsIt: 'Serves as Robotics Club Captain, demonstrating leadership and initiative.'
-        },
-        {
-          value: 'Innovation',
-          weight: 0.20,
-          whyItMatters: 'The scholarship seeks students who develop novel solutions to complex problems.',
-          howStudentMeetsIt: 'Hackathon winner showing creative problem-solving and technical innovation.'
-        },
-        {
-          value: 'Community Service',
-          weight: 0.15,
-          whyItMatters: 'Commitment to service reflects empathy and social responsibility.',
-          howStudentMeetsIt: 'Active as volunteer tutor, dedicated to serving others.'
-        },
-        {
-          value: 'Personal Growth',
-          weight: 0.05,
-          whyItMatters: 'Resilience and ability to overcome challenges indicates strong character.',
-          howStudentMeetsIt: 'First-generation student showing determination and growth mindset.'
-        }
-      ],
-      originalSample: mockProfile.writingSample || undefined
+      tailoredEssay: pipelineResult.essay.essay || '',
+      explainability: adaptiveWeights.map((weight: any) => ({
+        value: weight.label,
+        weight: weight.weight,
+        whyItMatters: `This criterion is important for evaluating scholarship candidates.`,
+        howStudentMeetsIt: pipelineResult.studentEvaluation.strongMatches?.includes(weight.label) 
+          ? `Student demonstrates strong performance in ${weight.label.toLowerCase()}.`
+          : `Student shows potential in ${weight.label.toLowerCase()}.`,
+      })),
+      originalSample: studentProfile.writingSample || undefined,
+      explanation: pipelineResult.essay.explanation || {},
     };
 
-    // In production: save to database
-    // await prisma.application.create({
-    //   data: {
-    //     userId,
-    //     scholarshipId,
-    //     generatedEssay: result.tailoredEssay,
-    //     explainabilityMatrix: result.explainability,
-    //     adaptiveWeights: result.adaptiveWeights,
-    //     scholarshipPersonality: result.scholarshipPersonality,
-    //     strengthMapping: result.strengthMapping,
-    //   }
-    // })
+    // Save to database
+    const application = await prisma.application.create({
+      data: {
+        userId: user.id,
+        scholarshipId: scholarship.id,
+        generatedEssay: result.tailoredEssay,
+        explainabilityMatrix: result.explainability,
+        adaptiveWeights: result.adaptiveWeights,
+        scholarshipPersonality: result.scholarshipPersonality,
+        strengthMapping: result.strengthMapping,
+        status: 'DRAFT',
+      },
+    });
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...result,
+      applicationId: application.id,
+    });
   } catch (error) {
     console.error('Application generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate application' },
+      { error: 'Failed to generate application', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
 }
-
-function generateEssay(profile: any, scholarship: any): string {
-  return `As a ${profile.major} student with a ${profile.gpa} GPA, I am deeply passionate about leveraging my skills to create meaningful impact in my community and beyond. The ${scholarship.name} aligns perfectly with my values and aspirations.
-
-Throughout my academic journey, I have consistently demonstrated excellence not just in the classroom, but in applying my knowledge to real-world challenges. My work as ${profile.extracurriculars.split(',')[0]} exemplifies my commitment to innovation and pushing boundaries.
-
-Leadership has been a cornerstone of my personal development. Through my ${profile.extracurriculars.split(',')[1]?.trim() || 'volunteer work'}, I have learned the importance of collaboration, empathy, and inspiring others to work toward common goals.
-
-${profile.personalBackground}
-
-I am particularly drawn to the ${scholarship.name} because it recognizes the importance of holistic excellence—balancing academic achievement with community service, leadership, and personal growth. This scholarship would enable me to continue my education while expanding my capacity to serve others.
-
-Looking forward, I am committed to using my education to create innovative solutions that benefit society, mentor future students, and give back to communities that have supported me. Thank you for considering my application.`;
-}
-
