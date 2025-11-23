@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import fs from 'fs/promises';
@@ -259,6 +258,15 @@ const scrapeWithCheerio = async () => {
  * @returns {Promise<Array>} Array of scholarship objects
  */
 const scrapeWithPuppeteer = async () => {
+  // Dynamic import for Puppeteer (optional dependency)
+  let puppeteer;
+  try {
+    const puppeteerModule = await import('puppeteer');
+    puppeteer = puppeteerModule.default;
+  } catch (error) {
+    throw new Error('Puppeteer is not installed. Install it with: npm install puppeteer');
+  }
+
   let browser;
   const scholarships = [];
 
