@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -15,18 +16,46 @@ import {
 
 export default function Home() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const onboardingCompleted = localStorage.getItem("onboardingCompleted");
-    setHasProfile(onboardingCompleted === "true");
-  }, []);
+    // Check onboarding status from API if user is signed in
+    if (isLoaded && isSignedIn) {
+      setIsChecking(true);
+      fetch("/api/users/profile")
+        .then((res) => {
+          if (res.ok) {
+            return res.json();
+          }
+          return null;
+        })
+        .then((data) => {
+          // If profile exists, user has completed onboarding
+          setHasProfile(!!data?.profile);
+        })
+        .catch(() => {
+          setHasProfile(false);
+        })
+        .finally(() => {
+          setIsChecking(false);
+        });
+    } else if (isLoaded && !isSignedIn) {
+      // Not signed in, no profile
+      setHasProfile(false);
+    }
+  }, [isSignedIn, isLoaded]);
 
   const handleGetStarted = () => {
-    if (hasProfile) {
+    if (!isLoaded) return; // Wait for auth to load
+    
+    if (isSignedIn && hasProfile) {
       router.push("/dashboard");
+    } else if (isSignedIn && !hasProfile) {
+      router.push("/onboarding");
     } else {
+      // Not signed in - redirect to sign up (which will go to onboarding)
       router.push("/onboarding");
     }
   };
