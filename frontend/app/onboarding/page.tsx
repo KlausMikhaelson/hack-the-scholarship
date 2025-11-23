@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
 import { OnboardingFormData } from "@/types";
 import { Check, ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user: clerkUser, isLoaded } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
 
@@ -20,7 +18,6 @@ export default function OnboardingPage() {
     formState: { errors },
     handleSubmit,
     trigger,
-    setValue,
   } = useForm<OnboardingFormData>({
     defaultValues: {
       name: "",
@@ -35,26 +32,11 @@ export default function OnboardingPage() {
     mode: "onChange",
   });
 
-  // Pre-populate name and email from Clerk when available
-  useEffect(() => {
-    if (isLoaded && clerkUser) {
-      const clerkName = clerkUser.fullName || 
-        `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 
-        clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 
-        '';
-      const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
-      
-      if (clerkName) setValue('name', clerkName);
-      if (clerkEmail) setValue('email', clerkEmail);
-    }
-  }, [isLoaded, clerkUser, setValue]);
 
   const watchedValues = watch();
 
   // Check step completion
   const isStep1Complete =
-    watchedValues.name &&
-    watchedValues.email &&
     watchedValues.gpa &&
     watchedValues.major;
   const isStep2Complete =
@@ -71,7 +53,8 @@ export default function OnboardingPage() {
 
     // Validate current step
     if (currentStep === 1) {
-      isValid = await trigger(["name", "email", "gpa", "major"]);
+      // Validate gpa and major
+      isValid = await trigger(["gpa", "major"]);
     } else if (currentStep === 2) {
       isValid = await trigger(["extracurriculars", "achievements"]);
     } else if (currentStep === 3) {
@@ -202,66 +185,6 @@ export default function OnboardingPage() {
               </h2>
 
               <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Full Name *
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      {...register("name", {
-                        required: "Name is required",
-                      })}
-                      disabled
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
-                      placeholder="Loading from your account..."
-                    />
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Name is managed by your account settings
-                    </p>
-                    {errors.name && (
-                      <p className="text-red-500 text-xs mt-1.5">
-                        {errors.name.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Email *
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      {...register("email", {
-                        required: "Email is required",
-                        pattern: {
-                          value: /^\S+@\S+$/i,
-                          message: "Invalid email",
-                        },
-                      })}
-                      disabled
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
-                      placeholder="Loading from your account..."
-                    />
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Email is managed by your account settings
-                    </p>
-                    {errors.email && (
-                      <p className="text-red-500 text-xs mt-1.5">
-                        {errors.email.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label
