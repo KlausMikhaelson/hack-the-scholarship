@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '@clerk/nextjs';
 import { Save, User as UserIcon } from 'lucide-react';
 
 interface ProfileFormData {
@@ -17,20 +19,77 @@ interface ProfileFormData {
 }
 
 export default function ProfilePage() {
+  const { user: clerkUser, isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<ProfileFormData>({
     defaultValues: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      gpa: '3.8',
-      major: 'Computer Science',
-      extracurriculars: 'Robotics Club Captain, Volunteer Tutor',
-      achievements: 'National Merit Scholar, Hackathon Winner',
-      personalBackground: 'First-generation college student passionate about using technology for social good.',
+      name: '',
+      email: '',
+      gpa: '',
+      major: '',
+      extracurriculars: '',
+      achievements: '',
+      personalBackground: '',
       writingSample: '',
     }
   });
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/users/profile');
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Profile not found. Please complete onboarding first.');
+            setIsLoading(false);
+            return;
+          }
+          throw new Error('Failed to fetch profile');
+        }
+
+        const data = await response.json();
+        const profile = data.profile;
+        const user = data.user || {};
+
+        // Populate form with fetched data (use API response for name/email, fallback to Clerk)
+        reset({
+          name: user.name || clerkUser?.fullName || clerkUser?.firstName || '',
+          email: user.email || clerkUser?.primaryEmailAddress?.emailAddress || '',
+          gpa: profile.gpaString || profile.gpa?.toString() || '',
+          major: profile.major || '',
+          extracurriculars: profile.extracurriculars || '',
+          achievements: profile.achievements || '',
+          personalBackground: profile.personalBackground || '',
+          writingSample: profile.writingSample || '',
+        });
+
+        setError(null);
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    // Only fetch when auth is loaded
+    if (isLoaded) {
+      if (!isSignedIn) {
+        // Redirect to home if not signed in
+        router.push('/');
+        return;
+      }
+      // Fetch profile even if clerkUser is not loaded yet - API will handle auth
+      fetchProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn, router]);
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
@@ -39,19 +98,83 @@ export default function ProfilePage() {
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          gpa: data.gpa,
+          major: data.major,
+          extracurriculars: data.extracurriculars,
+          achievements: data.achievements,
+          personalBackground: data.personalBackground,
+          writingSample: data.writingSample,
+        }),
       });
 
-      if (!response.ok) throw new Error('Save failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Save failed');
+      }
 
       alert('Profile updated successfully!');
     } catch (error) {
       console.error('Save error:', error);
-      alert('Failed to save profile');
+      alert(error instanceof Error ? error.message : 'Failed to save profile');
     } finally {
       setIsSaving(false);
     }
   };
+
+  // Show loading while auth is loading or while fetching profile
+  if (!isLoaded || isLoading) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">{!isLoaded ? 'Loading authentication...' : 'Loading profile...'}</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Redirect if not signed in (handled in useEffect, but show loading while redirecting)
+  if (isLoaded && !isSignedIn) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Redirecting...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <p className="text-red-800 font-medium mb-2">Error loading profile</p>
+            <p className="text-red-600 text-sm mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -77,22 +200,24 @@ export default function ProfilePage() {
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                   <input
-                    {...register('name', { required: 'Required' })}
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                    {...register('name')}
+                    disabled
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name.message}</p>}
+                  <p className="text-xs text-gray-400 mt-1">Name is managed by your account settings</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <input
                     type="email"
-                    {...register('email', { required: 'Required' })}
-                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                    {...register('email')}
+                    disabled
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
                   />
-                  {errors.email && <p className="text-red-500 text-xs mt-1.5">{errors.email.message}</p>}
+                  <p className="text-xs text-gray-400 mt-1">Email is managed by your account settings</p>
                 </div>
               </div>
 

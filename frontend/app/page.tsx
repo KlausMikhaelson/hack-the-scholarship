@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -54,19 +54,17 @@ export default function Home() {
             </Link>
           ) : (
             <>
-              <Link
-                href="/onboarding"
-                className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/dashboard"
-                className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                View Dashboard
-              </Link>
+              <SignUpButton mode="modal" forceRedirectUrl="/onboarding">
+                <button className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow">
+                  Get Started
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </SignUpButton>
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                <button className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm">
+                  View Dashboard
+                </button>
+              </SignInButton>
             </>
           )}
         </div>

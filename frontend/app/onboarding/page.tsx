@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { OnboardingFormData } from "@/types";
 import { Check, ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user: clerkUser, isLoaded } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
 
@@ -18,6 +20,7 @@ export default function OnboardingPage() {
     formState: { errors },
     handleSubmit,
     trigger,
+    setValue,
   } = useForm<OnboardingFormData>({
     defaultValues: {
       name: "",
@@ -31,6 +34,20 @@ export default function OnboardingPage() {
     },
     mode: "onChange",
   });
+
+  // Pre-populate name and email from Clerk when available
+  useEffect(() => {
+    if (isLoaded && clerkUser) {
+      const clerkName = clerkUser.fullName || 
+        `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 
+        clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+        '';
+      const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
+      
+      if (clerkName) setValue('name', clerkName);
+      if (clerkEmail) setValue('email', clerkEmail);
+    }
+  }, [isLoaded, clerkUser, setValue]);
 
   const watchedValues = watch();
 
@@ -199,9 +216,13 @@ export default function OnboardingPage() {
                       {...register("name", {
                         required: "Name is required",
                       })}
-                      className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                      placeholder="John Doe"
+                      disabled
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                      placeholder="Loading from your account..."
                     />
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Name is managed by your account settings
+                    </p>
                     {errors.name && (
                       <p className="text-red-500 text-xs mt-1.5">
                         {errors.name.message}
@@ -226,9 +247,13 @@ export default function OnboardingPage() {
                           message: "Invalid email",
                         },
                       })}
-                      className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
-                      placeholder="john@example.com"
+                      disabled
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                      placeholder="Loading from your account..."
                     />
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Email is managed by your account settings
+                    </p>
                     {errors.email && (
                       <p className="text-red-500 text-xs mt-1.5">
                         {errors.email.message}

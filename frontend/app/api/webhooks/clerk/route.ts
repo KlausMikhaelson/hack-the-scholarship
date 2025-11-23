@@ -2,6 +2,7 @@ import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,46 +57,89 @@ export async function POST(req: NextRequest) {
     if (eventType === 'user.created' || eventType === 'user.updated') {
       const { id, email_addresses, first_name, last_name } = evt.data;
 
-      // Sync user to backend database
+      // Sync user to database using Prisma
       try {
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
-        const response = await fetch(`${backendUrl}/api/users/sync`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            clerkId: id,
-            email: email_addresses[0]?.email_address,
-            name: `${first_name || ''} ${last_name || ''}`.trim() || email_addresses[0]?.email_address?.split('@')[0] || 'User',
-            firstName: first_name,
-            lastName: last_name,
-          }),
+        const email = email_addresses[0]?.email_address;
+        const name = `${first_name || ''} ${last_name || ''}`.trim() || email?.split('@')[0] || 'User';
+
+        if (!email) {
+          console.error('No email address found in webhook data');
+          // Skip this user but continue processing
+        } else {
+          // Try to find user by clerkId first
+        let user = await prisma.user.findUnique({
+          where: { clerkId: id },
         });
 
-        if (!response.ok) {
-          console.error('Failed to sync user to backend:', await response.text());
+        if (user) {
+          // Update existing user
+          await prisma.user.update({
+            where: { clerkId: id },
+            data: {
+              email,
+              name: name || user.name,
+              firstName: first_name,
+              lastName: last_name,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          // Check if user exists by email (in case clerkId wasn't set before)
+          const existingUser = await prisma.user.findUnique({
+            where: { email },
+          });
+
+          if (existingUser) {
+            // Update existing user with clerkId
+            await prisma.user.update({
+              where: { email },
+              data: {
+                clerkId: id,
+                name: name || existingUser.name,
+                firstName: first_name,
+                lastName: last_name,
+                updatedAt: new Date(),
+              },
+            });
+          } else {
+            // Create new user
+            await prisma.user.create({
+              data: {
+                clerkId: id,
+                email,
+                name,
+                firstName: first_name,
+                lastName: last_name,
+                onboardingCompleted: false,
+              },
+            });
+          }
+        }
         }
       } catch (error) {
-        console.error('Error syncing user to backend:', error);
+        console.error('Error syncing user from Clerk webhook:', error);
+        // Don't fail the webhook, just log the error
       }
     }
 
     if (eventType === 'user.deleted') {
       const { id } = evt.data;
 
-      // Delete user from backend database
+      // Delete user from database using Prisma
       try {
-        // const backendUrl = process.env.BACKEND_URL || 'http://localhost:3004';
-        const response = await fetch(`/api/users/${id}`, {
-          method: 'DELETE',
+        const user = await prisma.user.findUnique({
+          where: { clerkId: id },
         });
 
-        if (!response.ok) {
-          console.error('Failed to delete user from backend:', await response.text());
+        if (user) {
+          // Delete user (cascade will delete profile and applications)
+          await prisma.user.delete({
+            where: { clerkId: id },
+          });
         }
       } catch (error) {
-        console.error('Error deleting user from backend:', error);
+        console.error('Error deleting user from Clerk webhook:', error);
+        // Don't fail the webhook, just log the error
       }
     }
 

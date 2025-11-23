@@ -1,24 +1,110 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { Award, FileText, TrendingUp, Plus } from 'lucide-react';
 
-export default function DashboardPage() {
-  // Mock data - replace with actual API calls
-  const stats = {
-    totalApplications: 3,
-    inProgress: 2,
-    submitted: 1,
-    scholarshipsAvailable: 12,
-  };
+interface DashboardStats {
+  totalApplications: number;
+  inProgress: number;
+  submitted: number;
+  scholarshipsAvailable: number;
+}
 
-  const recentApplications = [
-    { id: '1', scholarshipName: 'Gates Millennium Scholarship', status: 'IN_PROGRESS', updatedAt: '2 hours ago' },
-    { id: '2', scholarshipName: 'Google Generation Scholarship', status: 'DRAFT', updatedAt: '1 day ago' },
-    { id: '3', scholarshipName: 'Coca-Cola Scholars Program', status: 'SUBMITTED', updatedAt: '3 days ago' },
-  ];
+interface RecentApplication {
+  id: string;
+  scholarshipName: string;
+  status: string;
+  updatedAt: string;
+}
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { isLoaded: authLoaded } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalApplications: 0,
+    inProgress: 0,
+    submitted: 0,
+    scholarshipsAvailable: 0,
+  });
+  const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only fetch when auth is loaded
+    if (!authLoaded) return;
+
+    async function fetchDashboardData() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/dashboard');
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to fetch dashboard data');
+        }
+
+        const data = await response.json();
+        
+        // Check if user needs to complete onboarding
+        if (data.needsOnboarding) {
+          router.push('/onboarding');
+          return;
+        }
+
+        setStats(data.stats);
+        setRecentApplications(data.recentApplications || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [authLoaded, router]);
+
+  if (!authLoaded || isLoading) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">{!authLoaded ? 'Loading authentication...' : 'Loading dashboard...'}</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <p className="text-red-800 font-medium mb-2">Error loading dashboard</p>
+            <p className="text-red-600 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -101,29 +187,44 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-3">
-            {recentApplications.map(app => (
-              <Link
-                key={app.id}
-                href={`/applications/${app.id}`}
-                className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                <div>
-                  <p className="font-medium text-gray-900 mb-1">{app.scholarshipName}</p>
-                  <p className="text-xs text-gray-500">Updated {app.updatedAt}</p>
-                </div>
-                <div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    app.status === 'SUBMITTED'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : app.status === 'IN_PROGRESS'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'bg-gray-50 text-gray-700 border border-gray-200'
-                  }`}>
-                    {app.status.replace('_', ' ')}
-                  </span>
-                </div>
-              </Link>
-            ))}
+            {recentApplications.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No applications yet</p>
+                <Link
+                  href="/scholarships"
+                  className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Browse scholarships →
+                </Link>
+              </div>
+            ) : (
+              recentApplications.map(app => (
+                <Link
+                  key={app.id}
+                  href={`/applications/${app.id}`}
+                  className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900 mb-1">{app.scholarshipName}</p>
+                    <p className="text-xs text-gray-500">Updated {app.updatedAt}</p>
+                  </div>
+                  <div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      app.status === 'SUBMITTED'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : app.status === 'IN_PROGRESS'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        : app.status === 'DRAFT'
+                        ? 'bg-gray-50 text-gray-700 border border-gray-200'
+                        : 'bg-gray-50 text-gray-700 border border-gray-200'
+                    }`}>
+                      {app.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </div>
