@@ -1,3 +1,53 @@
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  onboardingCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  gpa: string;
+  major: string;
+  extracurriculars: string;
+  achievements: string;
+  personalBackground: string;
+  writingSample?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Scholarship {
+  id: string;
+  name: string;
+  description: string;
+  deadline?: string;
+  sourceUrl?: string;
+  isPreloaded: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Application {
+  id: string;
+  userId: string;
+  scholarshipId: string;
+  generatedEssay: string;
+  editedEssay?: string;
+  explainabilityMatrix: ExplainabilityRow[];
+  adaptiveWeights: WeightData[];
+  scholarshipPersonality: ScholarshipPersonality;
+  strengthMapping: StrengthMapping[];
+  status: 'DRAFT' | 'IN_PROGRESS' | 'SUBMITTED' | 'ARCHIVED';
+  createdAt: string;
+  updatedAt: string;
+  scholarship?: Scholarship;
+}
+
+// Legacy types for pipeline
 export interface StudentProfile {
   name: string;
   gpa: string;
@@ -7,12 +57,6 @@ export interface StudentProfile {
   personalBackground: string;
   writingSample?: string;
   resume?: File | null;
-}
-
-export interface Scholarship {
-  id: string;
-  name: string;
-  description: string;
 }
 
 export interface ScholarshipInput {
@@ -54,3 +98,17 @@ export interface PipelineResult {
   originalSample?: string;
 }
 
+export interface OnboardingFormData {
+  // Step 1
+  name: string;
+  email: string;
+  gpa: string;
+  major: string;
+  // Step 2
+  extracurriculars: string;
+  achievements: string;
+  // Step 3
+  personalBackground: string;
+  // Step 4
+  writingSample?: string;
+}

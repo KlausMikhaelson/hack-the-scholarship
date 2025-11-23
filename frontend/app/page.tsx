@@ -1,55 +1,60 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import {
-  ArrowRight,
-  Award,
-  Zap,
-  BarChart3,
-  FileText,
-  Target,
-} from "lucide-react";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowRight, Award, Zap, BarChart3, FileText, Target } from 'lucide-react';
 
 export default function Home() {
+  const router = useRouter();
+
+  // Check if user is onboarded
+  useEffect(() => {
+    // In production, check actual auth/onboarding status
+    const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted');
+    
+    // For demo: auto-redirect after 3 seconds
+    // Comment this out if you want to show landing page
+    // setTimeout(() => {
+    //   if (hasCompletedOnboarding) {
+    //     router.push('/dashboard');
+    //   } else {
+    //     router.push('/onboarding');
+    //   }
+    // }, 3000);
+  }, [router]);
+
   return (
-    <div
-      className="min-h-screen bg-[#fafafa]"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
-        backgroundSize: "24px 24px",
-      }}
-    >
+    <div className="min-h-screen">
       {/* Hero Section */}
       <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium mb-8">
           <Zap className="w-3 h-3" />
-          <span>AI-Powered Scholarship Assistant</span>
+          <span>AI-Powered Scholarship Platform</span>
         </div>
-
+        
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-[#111] mb-6">
           Scholarship Application <br className="hidden md:block" /> Optimizer
         </h1>
-
+        
         <p className="text-lg md:text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-          Craft perfectly tailored scholarship applications with advanced AI
-          analysis, adaptive weighting, and explainable targeting.
+          Create your profile once, apply to multiple scholarships with AI-generated personalized essays.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link
-            href="/apply"
+          <Link 
+            href="/onboarding"
             className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
           >
-            Start Application
+            Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a
-            href="#samples"
+          <Link 
+            href="/dashboard"
             className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            View Samples
-          </a>
+            View Dashboard
+          </Link>
         </div>
       </div>
 
@@ -60,12 +65,9 @@ export default function Home() {
             <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 border border-gray-100">
               <Zap className="w-5 h-5 text-gray-700" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              Pattern Recognition
-            </h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">One Profile, Many Apps</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Identifies hidden values and messaging patterns in scholarship
-              descriptions.
+              Create your profile once and reuse it across all scholarship applications.
             </p>
           </div>
 
@@ -73,12 +75,9 @@ export default function Home() {
             <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 border border-gray-100">
               <BarChart3 className="w-5 h-5 text-gray-700" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              Adaptive Weighting
-            </h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Smart Analysis</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Calculates criteria importance dynamically based on scholarship
-              personality.
+              AI analyzes each scholarship and adapts your application accordingly.
             </p>
           </div>
 
@@ -86,11 +85,9 @@ export default function Home() {
             <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 border border-gray-100">
               <Target className="w-5 h-5 text-gray-700" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              Strength Mapping
-            </h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Editable Essays</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Matches your profile to values with evidence-based justification.
+              Generate, edit, and refine essays with AI-powered suggestions.
             </p>
           </div>
 
@@ -98,58 +95,50 @@ export default function Home() {
             <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 border border-gray-100">
               <FileText className="w-5 h-5 text-gray-700" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              Tailored Essays
-            </h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Track Progress</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Generates essays that resonate with specific selection criteria.
+              Manage multiple applications with status tracking and deadlines.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Sample Scholarships Section */}
-      <div
-        id="samples"
-        className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-200"
-      >
+      {/* How It Works */}
+      <div className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-200">
         <h2 className="text-2xl font-bold text-center text-[#111] mb-12">
-          Sample Scholarships
+          How It Works
         </h2>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              1
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Create Your Profile</h3>
+            <p className="text-sm text-gray-500">
+              One-time setup with your academics, activities, and background
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            {
-              name: "Gates Millennium Scholarship",
-              focus: "Leadership & Service",
-            },
-            {
-              name: "Google Generation Scholarship",
-              focus: "Innovation & Technology",
-            },
-            { name: "Coca-Cola Scholars Program", focus: "Community Impact" },
-            {
-              name: "National Merit Scholarship",
-              focus: "Academic Excellence",
-            },
-            { name: "Dell Scholars Program", focus: "Grit & Determination" },
-          ].map((scholarship, index) => (
-            <Link
-              href="/apply"
-              key={index}
-              className="group bg-white p-5 rounded-xl border border-gray-200 hover:border-blue-500 transition-colors flex justify-between items-center"
-            >
-              <div>
-                <h3 className="font-medium text-gray-900 mb-1">
-                  {scholarship.name}
-                </h3>
-                <p className="text-sm text-gray-500">{scholarship.focus}</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-              </div>
-            </Link>
-          ))}
+          <div className="text-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              2
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Browse Scholarships</h3>
+            <p className="text-sm text-gray-500">
+              Select from our library or add your own via URL scraping
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              3
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Generate & Edit</h3>
+            <p className="text-sm text-gray-500">
+              AI creates tailored essays you can edit and refine
+            </p>
+          </div>
         </div>
       </div>
     </div>

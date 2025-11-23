@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import PipelineOutput from '@/components/PipelineOutput';
-import LoadingState from '@/components/LoadingState';
-import ProgressIndicator from '@/components/ProgressIndicator';
-import { StudentProfile, ScholarshipInput as ScholarshipInputType, PipelineResult } from '@/types';
-import { ArrowLeft, ArrowRight, FileText, List, Play } from 'lucide-react';
-import Link from 'next/link';
-import scholarships from '@/data/sample_scholarships.json';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import PipelineOutput from "@/components/PipelineOutput";
+import LoadingState from "@/components/LoadingState";
+import ProgressIndicator from "@/components/ProgressIndicator";
+import {
+  StudentProfile,
+  ScholarshipInput as ScholarshipInputType,
+  PipelineResult,
+} from "@/types";
+import { ArrowLeft, ArrowRight, FileText, List, Play } from "lucide-react";
+import Link from "next/link";
+import scholarships from "@/data/sample_scholarships.json";
 
 type CombinedFormData = StudentProfile & ScholarshipInputType;
 
@@ -16,78 +20,92 @@ export default function ApplyPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
-  const [scholarshipInputMethod, setScholarshipInputMethod] = useState<'paste' | 'select'>('paste');
+  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(
+    null
+  );
+  const [scholarshipInputMethod, setScholarshipInputMethod] = useState<
+    "paste" | "select"
+  >("paste");
 
-  const { register, watch, setValue, trigger, getValues, formState: { errors } } = useForm<any>({
+  const {
+    register,
+    watch,
+    setValue,
+    trigger,
+    getValues,
+    formState: { errors },
+  } = useForm<any>({
     defaultValues: {
-      name: '',
-      gpa: '',
-      major: '',
-      extracurriculars: '',
-      achievements: '',
-      personalBackground: '',
-      writingSample: '',
-      scholarshipName: '',
-      description: '',
-      selectedScholarshipId: '',
+      name: "",
+      gpa: "",
+      major: "",
+      extracurriculars: "",
+      achievements: "",
+      personalBackground: "",
+      writingSample: "",
+      scholarshipName: "",
+      description: "",
+      selectedScholarshipId: "",
     },
-    mode: 'onChange'
+    mode: "onChange",
   });
 
   // Watch form values
   const watchedValues = watch();
 
   // Check if Step 1 is complete
-  const isStep1Complete = watchedValues.name && watchedValues.gpa && watchedValues.major;
+  const isStep1Complete =
+    watchedValues.name && watchedValues.gpa && watchedValues.major;
 
   // Check if Step 2 is complete
-  const isStep2Complete = watchedValues.extracurriculars || watchedValues.achievements;
+  const isStep2Complete =
+    watchedValues.extracurriculars || watchedValues.achievements;
 
   // Check if Step 3 is complete
   const isStep3Complete = watchedValues.personalBackground;
 
   // Check if Step 4 is complete
-  const isStep4Complete = watchedValues.scholarshipName && watchedValues.description;
+  const isStep4Complete =
+    watchedValues.scholarshipName && watchedValues.description;
 
   // Auto-advance to next step
   useEffect(() => {
     if (currentStep === 1 && isStep1Complete && !completedSteps.includes(1)) {
-      setCompletedSteps(prev => [...prev, 1]);
-      setTimeout(() => setCurrentStep(2), 300);
+      setCompletedSteps((prev) => [...prev, 1]);
+      setCurrentStep(2);
     }
   }, [isStep1Complete, currentStep, completedSteps]);
 
   useEffect(() => {
     if (currentStep === 2 && isStep2Complete && !completedSteps.includes(2)) {
-      setCompletedSteps(prev => [...prev, 2]);
-      setTimeout(() => setCurrentStep(3), 300);
+      setCompletedSteps((prev) => [...prev, 2]);
+      setCurrentStep(3);
     }
   }, [isStep2Complete, currentStep, completedSteps]);
 
   useEffect(() => {
     if (currentStep === 3 && isStep3Complete && !completedSteps.includes(3)) {
-      setCompletedSteps(prev => [...prev, 3]);
-      setTimeout(() => setCurrentStep(4), 300);
+      setCompletedSteps((prev) => [...prev, 3]);
+      setCurrentStep(4);
     }
   }, [isStep3Complete, currentStep, completedSteps]);
 
   useEffect(() => {
     if (currentStep === 4 && isStep4Complete && !completedSteps.includes(4)) {
-      setCompletedSteps(prev => [...prev, 4]);
-      setTimeout(() => setCurrentStep(5), 300);
+      setCompletedSteps((prev) => [...prev, 4]);
+      setCurrentStep(5);
     }
   }, [isStep4Complete, currentStep, completedSteps]);
 
   const handleScholarshipSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
-    setValue('selectedScholarshipId', selectedId);
-    
+    setValue("selectedScholarshipId", selectedId);
+
     if (selectedId) {
-      const selected = scholarships.find(s => s.id === selectedId);
+      const selected = scholarships.find((s) => s.id === selectedId);
       if (selected) {
-        setValue('scholarshipName', selected.name);
-        setValue('description', selected.description);
+        setValue("scholarshipName", selected.name);
+        setValue("description", selected.description);
       }
     }
   };
@@ -109,12 +127,12 @@ export default function ApplyPage() {
     };
 
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch('/api/runPipeline', {
-        method: 'POST',
+      const response = await fetch("/api/runPipeline", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           student: studentData,
@@ -123,15 +141,15 @@ export default function ApplyPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Pipeline failed');
+        throw new Error("Pipeline failed");
       }
 
       const result: PipelineResult = await response.json();
       setPipelineResult(result);
-      setCompletedSteps(prev => [...prev, 5]);
+      setCompletedSteps((prev) => [...prev, 5]);
     } catch (error) {
-      console.error('Error running pipeline:', error);
-      alert('An error occurred. Please try again.');
+      console.error("Error running pipeline:", error);
+      alert("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -154,12 +172,12 @@ export default function ApplyPage() {
     };
 
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch('/api/generateEssay', {
-        method: 'POST',
+      const response = await fetch("/api/generateEssay", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           student: studentData,
@@ -169,7 +187,7 @@ export default function ApplyPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Regeneration failed');
+        throw new Error("Regeneration failed");
       }
 
       const { essay } = await response.json();
@@ -180,8 +198,8 @@ export default function ApplyPage() {
         });
       }
     } catch (error) {
-      console.error('Error regenerating essay:', error);
-      alert('An error occurred. Please try again.');
+      console.error("Error regenerating essay:", error);
+      alert("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -189,19 +207,30 @@ export default function ApplyPage() {
 
   if (pipelineResult && !isLoading) {
     return (
-      <div className="min-h-screen bg-[#fafafa]" style={{ backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+      <div
+        className="min-h-screen bg-[#fafafa]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      >
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-center justify-between border-b border-gray-200 pb-6 mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-[#111]">Analysis Results</h2>
-              <p className="text-sm text-gray-500 mt-1">Your personalized scholarship application package</p>
+              <h2 className="text-2xl font-bold text-[#111]">
+                Analysis Results
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Your personalized scholarship application package
+              </p>
             </div>
             <button
               onClick={() => {
                 setPipelineResult(null);
                 setCurrentStep(1);
                 setCompletedSteps([]);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -210,142 +239,163 @@ export default function ApplyPage() {
             </button>
           </div>
 
-          <PipelineOutput result={pipelineResult} onRegenerate={handleRegenerate} />
+          <PipelineOutput
+            result={pipelineResult}
+            onRegenerate={handleRegenerate}
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa]" style={{ backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+    <div
+      className="min-h-screen bg-[#fafafa]"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
-          <Link 
+          <Link
             href="/"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
-          
+
           <h1 className="text-3xl font-bold text-[#111] mb-3 tracking-tight">
             New Application
           </h1>
           <p className="text-lg text-gray-500">
-            Complete each step to generate your personalized scholarship application.
+            Complete each step to generate your personalized scholarship
+            application.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-[280px,1fr] gap-8">
           {/* Progress Indicator */}
           <div className="hidden lg:block">
-            <ProgressIndicator currentStep={currentStep} completedSteps={completedSteps} />
+            <ProgressIndicator
+              currentStep={currentStep}
+              completedSteps={completedSteps}
+            />
           </div>
 
           {/* Form Steps */}
           <div className="space-y-6">
             {/* Step 1: Student Basics */}
-            <div className={`bg-white border border-gray-200 rounded-xl p-8 shadow-sm transition-all duration-300 ${
-              currentStep >= 1 ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}>
+            <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
                   1
                 </div>
-                <h2 className="text-xl font-semibold text-[#111]">Student Basics</h2>
+                <h2 className="text-xl font-semibold text-[#111]">
+                  Student Basics
+                </h2>
               </div>
 
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Full Name *
                     </label>
                     <input
                       id="name"
                       type="text"
-                      {...register('name', { required: 'Name is required' })}
+                      {...register("name", { required: "Name is required" })}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                       placeholder="John Doe"
                     />
                     {errors.name && (
-                      <p className="text-red-500 text-xs mt-1.5">{errors.name?.message as string}</p>
+                      <p className="text-red-500 text-xs mt-1.5">
+                        {errors.name?.message as string}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="gpa" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="gpa"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       GPA *
                     </label>
                     <input
                       id="gpa"
                       type="text"
-                      {...register('gpa', { 
-                        required: 'GPA is required',
+                      {...register("gpa", {
+                        required: "GPA is required",
                         pattern: {
                           value: /^[0-4](\.\d{1,2})?$/,
-                          message: 'Please enter a valid GPA (0.0-4.0)'
-                        }
+                          message: "Please enter a valid GPA (0.0-4.0)",
+                        },
                       })}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                       placeholder="3.8"
                     />
                     {errors.gpa && (
-                      <p className="text-red-500 text-xs mt-1.5">{errors.gpa?.message as string}</p>
+                      <p className="text-red-500 text-xs mt-1.5">
+                        {errors.gpa?.message as string}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="major" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="major"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Major / Intended Field of Study *
                   </label>
                   <input
                     id="major"
                     type="text"
-                    {...register('major', { required: 'Major is required' })}
+                    {...register("major", { required: "Major is required" })}
                     className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                     placeholder="Computer Science"
                   />
                   {errors.major && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.major?.message as string}</p>
+                    <p className="text-red-500 text-xs mt-1.5">
+                      {errors.major?.message as string}
+                    </p>
                   )}
                 </div>
-
-                {isStep1Complete && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <span className="font-medium">Step completed! Continuing to next step...</span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
             {/* Step 2: Experiences & Achievements */}
             {currentStep >= 2 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
                     2
                   </div>
-                  <h2 className="text-xl font-semibold text-[#111]">Experiences & Achievements</h2>
+                  <h2 className="text-xl font-semibold text-[#111]">
+                    Experiences & Achievements
+                  </h2>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="extracurriculars" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="extracurriculars"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Extracurricular Activities
                     </label>
                     <textarea
                       id="extracurriculars"
-                      {...register('extracurriculars')}
+                      {...register("extracurriculars")}
                       rows={4}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-y"
                       placeholder="List your extracurricular activities, clubs, sports, volunteer work..."
@@ -353,109 +403,100 @@ export default function ApplyPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="achievements" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="achievements"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Achievements & Awards
                     </label>
                     <textarea
                       id="achievements"
-                      {...register('achievements')}
+                      {...register("achievements")}
                       rows={4}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-y"
                       placeholder="List your achievements, awards, honors, recognitions..."
                     />
                   </div>
-
-                  {isStep2Complete && (
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2 text-sm text-green-600">
-                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="font-medium">Step completed! Continuing to next step...</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
 
             {/* Step 3: Personal Background */}
             {currentStep >= 3 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
                     3
                   </div>
-                  <h2 className="text-xl font-semibold text-[#111]">Personal Background</h2>
+                  <h2 className="text-xl font-semibold text-[#111]">
+                    Personal Background
+                  </h2>
                 </div>
 
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="personalBackground" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="personalBackground"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Personal Background *
                     </label>
                     <textarea
                       id="personalBackground"
-                      {...register('personalBackground', { required: 'Personal background is required' })}
+                      {...register("personalBackground", {
+                        required: "Personal background is required",
+                      })}
                       rows={5}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-y"
                       placeholder="Share your story: challenges, motivations, community involvement, family background..."
                     />
                     {errors.personalBackground && (
-                      <p className="text-red-500 text-xs mt-1.5">{errors.personalBackground?.message as string}</p>
+                      <p className="text-red-500 text-xs mt-1.5">
+                        {errors.personalBackground?.message as string}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="writingSample" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="writingSample"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Writing Sample (Optional)
                     </label>
                     <textarea
                       id="writingSample"
-                      {...register('writingSample')}
+                      {...register("writingSample")}
                       rows={6}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-y"
                       placeholder="Paste a generic essay or personal statement (optional for comparison)"
                     />
                   </div>
-
-                  {isStep3Complete && (
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2 text-sm text-green-600">
-                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="font-medium">Step completed! Continuing to next step...</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
 
             {/* Step 4: Scholarship Information */}
             {currentStep >= 4 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
                     4
                   </div>
-                  <h2 className="text-xl font-semibold text-[#111]">Scholarship Information</h2>
+                  <h2 className="text-xl font-semibold text-[#111]">
+                    Scholarship Information
+                  </h2>
                 </div>
 
                 {/* Input Method Tabs */}
                 <div className="flex p-1 bg-gray-100 rounded-lg mb-8 w-fit">
                   <button
                     type="button"
-                    onClick={() => setScholarshipInputMethod('paste')}
+                    onClick={() => setScholarshipInputMethod("paste")}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      scholarshipInputMethod === 'paste'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                      scholarshipInputMethod === "paste"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -463,11 +504,11 @@ export default function ApplyPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setScholarshipInputMethod('select')}
+                    onClick={() => setScholarshipInputMethod("select")}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                      scholarshipInputMethod === 'select'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                      scholarshipInputMethod === "select"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -477,9 +518,12 @@ export default function ApplyPage() {
 
                 <div className="space-y-6">
                   {/* Sample Scholarship Selector */}
-                  {scholarshipInputMethod === 'select' && (
+                  {scholarshipInputMethod === "select" && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label htmlFor="sampleScholarship" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="sampleScholarship"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Select a Sample Scholarship
                       </label>
                       <select
@@ -488,7 +532,7 @@ export default function ApplyPage() {
                         className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                       >
                         <option value="">-- Choose a scholarship --</option>
-                        {scholarships.map(scholarship => (
+                        {scholarships.map((scholarship) => (
                           <option key={scholarship.id} value={scholarship.id}>
                             {scholarship.name}
                           </option>
@@ -498,74 +542,82 @@ export default function ApplyPage() {
                   )}
 
                   <div>
-                    <label htmlFor="scholarshipName" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="scholarshipName"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Scholarship Name *
                     </label>
                     <input
                       id="scholarshipName"
                       type="text"
-                      {...register('scholarshipName', { required: 'Scholarship name is required' })}
+                      {...register("scholarshipName", {
+                        required: "Scholarship name is required",
+                      })}
                       className={`w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none ${
-                        scholarshipInputMethod === 'select' ? 'bg-gray-50 text-gray-500' : ''
+                        scholarshipInputMethod === "select"
+                          ? "bg-gray-50 text-gray-500"
+                          : ""
                       }`}
                       placeholder="Enter scholarship name"
-                      readOnly={scholarshipInputMethod === 'select'}
+                      readOnly={scholarshipInputMethod === "select"}
                     />
                     {errors.scholarshipName && (
-                      <p className="text-red-500 text-xs mt-1.5">{errors.scholarshipName?.message as string}</p>
+                      <p className="text-red-500 text-xs mt-1.5">
+                        {errors.scholarshipName?.message as string}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="scholarshipDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="scholarshipDescription"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Scholarship Description *
                     </label>
                     <textarea
                       id="scholarshipDescription"
-                      {...register('description', { required: 'Scholarship description is required' })}
+                      {...register("description", {
+                        required: "Scholarship description is required",
+                      })}
                       rows={12}
                       className={`w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-y ${
-                        scholarshipInputMethod === 'select' ? 'bg-gray-50 text-gray-500' : ''
+                        scholarshipInputMethod === "select"
+                          ? "bg-gray-50 text-gray-500"
+                          : ""
                       }`}
                       placeholder="Paste the full scholarship description, requirements, and criteria here..."
-                      readOnly={scholarshipInputMethod === 'select'}
+                      readOnly={scholarshipInputMethod === "select"}
                     />
                     {errors.description && (
-                      <p className="text-red-500 text-xs mt-1.5">{errors.description?.message as string}</p>
+                      <p className="text-red-500 text-xs mt-1.5">
+                        {errors.description?.message as string}
+                      </p>
                     )}
                   </div>
-
-                  {isStep4Complete && (
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2 text-sm text-green-600">
-                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="font-medium">All information collected! Ready to generate.</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
 
             {/* Step 5: Generate */}
             {currentStep >= 5 && !isLoading && (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
                     5
                   </div>
-                  <h2 className="text-xl font-semibold text-[#111]">Generate Application</h2>
+                  <h2 className="text-xl font-semibold text-[#111]">
+                    Generate Application
+                  </h2>
                 </div>
 
                 <div className="text-center py-8">
                   <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    You&apos;ve completed all steps! Click below to generate your personalized scholarship application package.
+                    You&apos;ve completed all steps! Click below to generate
+                    your personalized scholarship application package.
                   </p>
-                  
+
                   <button
                     onClick={handleRunAnalysis}
                     className="h-14 px-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-lg transition-all shadow-sm hover:shadow flex items-center justify-center gap-3 mx-auto"
@@ -573,20 +625,17 @@ export default function ApplyPage() {
                     <Play className="w-5 h-5" />
                     Generate Tailored Application Package
                   </button>
-                  
+
                   <p className="text-xs text-gray-400 mt-4">
-                    This will analyze your profile and create personalized content
+                    This will analyze your profile and create personalized
+                    content
                   </p>
                 </div>
               </div>
             )}
 
             {/* Loading State */}
-            {isLoading && (
-              <div className="animate-in fade-in duration-300">
-                <LoadingState />
-              </div>
-            )}
+            {isLoading && <LoadingState />}
           </div>
         </div>
       </div>
