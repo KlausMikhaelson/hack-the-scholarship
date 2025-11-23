@@ -1,0 +1,28 @@
+[
+  {
+    "id": "1",
+    "name": "Gates Millennium Scholarship",
+    "description": "The Gates Millennium Scholars Program provides outstanding African American, American Indian/Alaska Native, Asian Pacific Islander American, and Hispanic American students with an opportunity to complete an undergraduate college education in any discipline area of interest. Continuing Gates Millennium Scholars may request funding for graduate programs in the areas of education, engineering, library science, mathematics, public health, or science.\n\nThe scholarship seeks students who have demonstrated:\n- Leadership abilities through participation in community service, extracurricular, or other activities\n- Significant academic achievement (minimum 3.3 GPA)\n- Financial need\n- Personal statements that demonstrate their commitment to community service and academic excellence\n\nWe value students who have overcome significant obstacles, demonstrated resilience, and show promise as future leaders who will give back to their communities."
+  },
+  {
+    "id": "2",
+    "name": "Google Generation Scholarship",
+    "description": "Google is committed to helping the innovators of tomorrow make the most of their talents by providing scholarships for students pursuing computer science and technology degrees.\n\nThe Generation Google Scholarship was established to help aspiring students pursuing computer science degrees excel in technology and become leaders in the field. Selected students will receive a scholarship for the academic year.\n\nTo be eligible, applicants must:\n- Be currently enrolled as a full-time student in a Bachelor's, Master's, or PhD program at an accredited university\n- Be studying computer science, computer engineering, or a closely related technical field\n- Demonstrate a strong academic record\n- Exemplify leadership and demonstrate a passion for computer science and technology\n- Be committed to diversity, equity, and inclusion in the field of computer science\n\nWe particularly value candidates who have contributed to innovative projects, participated in hackathons, developed open-source software, or demonstrated technical creativity."
+  },
+  {
+    "id": "3",
+    "name": "Coca-Cola Scholars Program",
+    "description": "The Coca-Cola Scholars Program scholarship is an achievement-based scholarship awarded to graduating high school seniors. Students are recognized for their capacity to lead and serve, as well as their commitment to making a significant impact on their schools and communities.\n\nCriteria for selection:\n- Leadership: Student has served in a leadership role in school, community, or work activities\n- Service: Student has made a meaningful contribution to their community through sustained volunteer service\n- Academic Achievement: Student demonstrates academic excellence with a minimum 3.0 GPA\n- Character: Student displays strong character including integrity, ethics, and demonstrated resilience in overcoming obstacles\n\nWe seek well-rounded students who balance academic excellence with meaningful community involvement. We value students who show initiative, creativity in problem-solving, and a genuine desire to make a positive difference in the world."
+  },
+  {
+    "id": "4",
+    "name": "National Merit Scholarship",
+    "description": "The National Merit Scholarship Program is an academic competition for recognition and scholarships that began in 1955. High school students enter the National Merit Program by taking the Preliminary SAT/National Merit Scholarship Qualifying Test (PSAT/NMSQT®).\n\nSelection criteria:\n- Outstanding academic record throughout high school\n- Exceptional standardized test scores (PSAT/SAT)\n- Strong endorsement from school principal\n- Demonstrated intellectual curiosity and love of learning\n- Well-rounded involvement in school and community activities\n\nThe program honors students who show exceptional academic ability and potential for success in rigorous college studies. We value intellectual achievement, dedication to learning, and students who push themselves to excel academically while maintaining balanced lives."
+  },
+  {
+    "id": "5",
+    "name": "Dell Scholars Program",
+    "description": "The Dell Scholars Program supports students who demonstrate determination to succeed despite facing significant obstacles. This scholarship recognizes students who are gritty, determined, and ambitious.\n\nEligibility requirements:\n- Participated in a college readiness program in grades 11 and 12\n- Minimum 2.4 GPA\n- Demonstrated financial need\n- Plan to enroll full-time in a bachelor's degree program\n\nWhat we value:\n- Grit and determination: Students who have overcome significant challenges\n- Individual determination: Self-motivated students who take initiative\n- Personal ambition: Students with clear goals and drive to achieve them\n- Resilience: Ability to bounce back from setbacks\n\nWe seek students who may not have perfect grades but show incredible drive, face adversity with courage, and demonstrate that they will succeed in college and beyond through sheer determination and hard work."
+  }
+]
+
