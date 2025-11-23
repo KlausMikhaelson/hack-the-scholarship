@@ -263,4 +263,3 @@ export async function processScholarshipApplication(
 
 // Export helper functions
 export { parseJSON };
-
