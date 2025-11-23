@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import PipelineOutput from "@/components/PipelineOutput";
 import LoadingState from "@/components/LoadingState";
 import ProgressIndicator from "@/components/ProgressIndicator";
@@ -17,6 +19,8 @@ import scholarships from "@/data/sample_scholarships.json";
 type CombinedFormData = StudentProfile & ScholarshipInputType;
 
 export default function ApplyPage() {
+  const { isSignedIn, isLoaded, userId } = useAuth();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +30,25 @@ export default function ApplyPage() {
   const [scholarshipInputMethod, setScholarshipInputMethod] = useState<
     "paste" | "select"
   >("paste");
+
+  // Redirect to home if not signed in
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  // Show loading while checking auth
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const {
     register,

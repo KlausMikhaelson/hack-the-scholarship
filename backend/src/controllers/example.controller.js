@@ -53,7 +53,7 @@ export const updateExample = async (req, res, next) => {
         description
       }
     });
-    
+
     res.json(example);
   } catch (error) {
     next(error);

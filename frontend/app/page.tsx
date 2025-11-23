@@ -2,27 +2,20 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import { ArrowRight, Award, Zap, BarChart3, FileText, Target } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
 
-  // Check if user is onboarded
+  // Redirect signed-in users to dashboard
   useEffect(() => {
-    // In production, check actual auth/onboarding status
-    const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted');
-    
-    // For demo: auto-redirect after 3 seconds
-    // Comment this out if you want to show landing page
-    // setTimeout(() => {
-    //   if (hasCompletedOnboarding) {
-    //     router.push('/dashboard');
-    //   } else {
-    //     router.push('/onboarding');
-    //   }
-    // }, 3000);
-  }, [router]);
+    if (isLoaded && isSignedIn) {
+      router.push('/dashboard');
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   return (
     <div className="min-h-screen">
@@ -42,19 +35,31 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link 
-            href="/onboarding"
-            className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
-          >
-            Get Started
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link 
-            href="/dashboard"
-            className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            View Dashboard
-          </Link>
+          {isSignedIn ? (
+            <Link 
+              href="/apply"
+              className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
+            >
+              Start Application
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <>
+              <Link 
+                href="/apply"
+                className="h-12 px-8 rounded-full bg-blue-600 text-white font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm hover:shadow"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link 
+                href="/apply"
+                className="h-12 px-8 rounded-full bg-white border border-gray-200 text-gray-700 font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                View Dashboard
+              </Link>
+            </>
+          )}
         </div>
       </div>
 

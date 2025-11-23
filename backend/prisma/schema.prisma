@@ -11,57 +11,140 @@ datasource db {
 }
 
 model User {
-  id                  String              @id @default(uuid())
-  email               String              @unique
+  id                  String        @id @default(uuid())
+  clerkId             String?      @unique // Clerk user ID
+  email               String        @unique
   name                String
-  onboardingCompleted Boolean             @default(false)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  firstName          String?
+  lastName             String?
+  onboardingCompleted Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   profile             UserProfile?
   applications        Application[]
+  
+  @@index([clerkId])
 }
 
 model UserProfile {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gpa                String
-  major              String
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Academic Information
+  gpa           Float // Numeric GPA for matching (0.0-4.0)
+  gpaString     String // Original GPA string from user input
+  major         String
+  fieldsOfStudy String[] @default([]) // Array of fields (e.g., ["Engineering", "Science"])
+  faculty       String? // Optional faculty name
+
+  // Student Status
+  studentStatus StudentStatus @default(IN_COURSE)
+  studentType   StudentType   @default(DOMESTIC)
+  year          Int? // Year of study (1-4 for undergraduate, etc.)
+
+  // Demographics (for matching)
+  gender      Gender?
+  citizenship String?
+  residency   String?
+
+  // Financial & Requirements
+  financialNeed Boolean @default(false)
+
+  // Profile Content
   extracurriculars   String
   achievements       String
   personalBackground String
   writingSample      String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum StudentStatus {
+  IN_COURSE
+  GRADUATING
+  GRADUATE
+  UNDERGRADUATE
+  ENTERING
+}
+
+enum StudentType {
+  DOMESTIC
+  INTERNATIONAL
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
 }
 
 model Scholarship {
-  id           String        @id @default(uuid())
-  name         String
-  description  String
-  deadline     DateTime?
-  sourceUrl    String?
-  isPreloaded  Boolean       @default(false)
+  id          String    @id @default(uuid())
+  name        String
+  title       String? // Original title from parsed data
+  description String
+  deadline    DateTime?
+  sourceUrl   String?
+  isPreloaded Boolean   @default(false)
+
+  // Matching fields (from parsed scholarships)
+  studentStatus StudentStatus[] @default([])
+  studentType   StudentType[]   @default([])
+  faculty       String?
+  fieldsOfStudy String[]        @default([])
+  gender        Gender?
+
+  // Requirements
+  financialNeed     Boolean  @default(false)
+  academicMerit     Boolean  @default(false)
+  minimumGPA        Float?
+  citizenship       String?
+  residency         String?
+  enrollmentStatus  String?
+  otherRequirements String[] @default([]) // e.g., ["indigenous", "lgbtq", "rural"]
+
+  // Amount information
+  amount         String?
+  amountMin      Float?
+  amountMax      Float?
+  amountCurrency String  @default("CAD")
+
+  // Metadata
+  source   String? // e.g., "uoft_smartsimple"
+  tags     String[] @default([])
+  parsedId Int? // ID from scholarships-parsed.json
+
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   applications Application[]
+
+  @@index([faculty])
+  @@index([financialNeed])
+  @@index([academicMerit])
+  @@index([minimumGPA])
+  @@index([source])
+  @@index([parsedId])
 }
 
 model Application {
-  id                    String   @id @default(uuid())
-  userId                String
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scholarshipId         String
-  scholarship           Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
-  generatedEssay        String
-  editedEssay           String?
-  explainabilityMatrix  Json
-  adaptiveWeights       Json
+  id                     String            @id @default(uuid())
+  userId                 String
+  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId          String
+  scholarship            Scholarship       @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  generatedEssay         String
+  editedEssay            String?
+  explainabilityMatrix   Json
+  adaptiveWeights        Json
   scholarshipPersonality Json
-  strengthMapping       Json
-  status                ApplicationStatus @default(DRAFT)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  strengthMapping        Json
+  status                 ApplicationStatus @default(DRAFT)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   @@unique([userId, scholarshipId])
 }
