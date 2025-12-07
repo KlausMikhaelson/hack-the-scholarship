@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Rocket,
   Users,
+  Trophy,
 } from "lucide-react";
 
 export default function Home() {
@@ -65,10 +66,16 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <div className="max-w-5xl mx-auto px-6 pt-32 pb-20 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium mb-8 shadow-sm">
-          <Sparkles className="w-4 h-4" />
-          <span>Powered by Claude AI</span>
+        {/* Badges */}
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium shadow-sm hover:bg-amber-100 transition-colors cursor-default">
+            <Trophy className="w-4 h-4 text-amber-600" />
+            <span>Winner: Toronto Anthropic AI Hackathon</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium shadow-sm">
+            <Sparkles className="w-4 h-4" />
+            <span>Powered by Claude AI</span>
+          </div>
         </div>
 
         {/* Main Heading */}
@@ -123,53 +130,57 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-6 pb-20">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Feature 1 */}
-          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center mb-5 border border-emerald-100 group-hover:scale-110 transition-transform">
+          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-emerald-200 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="w-14 h-14 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center mb-5 border border-emerald-100 group-hover:scale-110 transition-transform duration-300 relative z-10">
               <Users className="w-7 h-7 text-emerald-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 relative z-10">
               One Profile, Many Apps
             </h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed relative z-10">
               Create your profile once and reuse it across all scholarship applications. Save time, stay consistent.
             </p>
           </div>
 
           {/* Feature 2 */}
-          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl flex items-center justify-center mb-5 border border-blue-100 group-hover:scale-110 transition-transform">
+          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-full -mr-4 -mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl flex items-center justify-center mb-5 border border-blue-100 group-hover:scale-110 transition-transform duration-300 relative z-10">
               <Brain className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 relative z-10">
               Smart Analysis
             </h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed relative z-10">
               AI analyzes each scholarship&apos;s values and adapts your application to match what they&apos;re looking for.
             </p>
           </div>
 
           {/* Feature 3 */}
-          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl flex items-center justify-center mb-5 border border-amber-100 group-hover:scale-110 transition-transform">
+          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-amber-200 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-amber-50 rounded-bl-full -mr-4 -mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl flex items-center justify-center mb-5 border border-amber-100 group-hover:scale-110 transition-transform duration-300 relative z-10">
               <PenTool className="w-7 h-7 text-amber-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 relative z-10">
               Editable Essays
             </h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed relative z-10">
               Generate, edit, and refine essays with AI-powered suggestions. Full control, zero hassle.
             </p>
           </div>
 
           {/* Feature 4 */}
-          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl flex items-center justify-center mb-5 border border-rose-100 group-hover:scale-110 transition-transform">
+          <div className="group bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-rose-200 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-rose-50 rounded-bl-full -mr-4 -mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="w-14 h-14 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl flex items-center justify-center mb-5 border border-rose-100 group-hover:scale-110 transition-transform duration-300 relative z-10">
               <TrendingUp className="w-7 h-7 text-rose-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 relative z-10">
               Track Progress
             </h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed relative z-10">
               Manage multiple applications with status tracking, deadlines, and progress monitoring all in one place.
             </p>
           </div>
@@ -178,21 +189,31 @@ export default function Home() {
 
       {/* Bottom CTA Section */}
       <div className="max-w-4xl mx-auto px-6 pb-20">
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-12 text-center border border-gray-200">
-          <Rocket className="w-12 h-12 text-emerald-600 mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Ready to win more scholarships?
-          </h2>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join students who are already using AI to craft winning applications.
-          </p>
-          <button
-            onClick={handleGetStarted}
-            className="h-14 px-10 rounded-xl bg-[#111] text-white font-semibold flex items-center gap-2 hover:bg-[#1a1a1a] transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 mx-auto"
-          >
-            Start Free
-            <ArrowRight className="w-5 h-5" />
-          </button>
+        <div className="relative overflow-hidden bg-[#111] rounded-3xl p-12 text-center shadow-2xl">
+          {/* Background Decorations */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+             <div className="absolute top-0 left-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2" />
+             <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2" />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="inline-flex items-center justify-center p-3 bg-white/5 rounded-2xl mb-8 ring-1 ring-white/10">
+              <Rocket className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Ready to win more scholarships?
+            </h2>
+            <p className="text-lg text-gray-400 mb-10 max-w-2xl mx-auto">
+              Join students who are already using AI to craft winning applications in less time.
+            </p>
+            <button
+              onClick={handleGetStarted}
+              className="h-14 px-10 rounded-xl bg-white text-black font-bold flex items-center gap-2 hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 mx-auto"
+            >
+              Start Free
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

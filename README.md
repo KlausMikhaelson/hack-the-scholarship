@@ -57,6 +57,30 @@ npm run dev:frontend  # Frontend only
 - **Frontend**: Next.js, React, TailwindCSS
 - **Browser Extension**: Chrome/Edge Extension API
 
+## Browser Extension
+
+The browser extension allows users to automatically fill scholarship application forms with their profile data.
+
+### Quick Setup
+
+1. **Install dependencies**:
+   ```bash
+   cd browser-extension
+   npm install
+   ```
+
+2. **Load extension in browser**:
+   - **Chrome**: Go to `chrome://extensions/`, enable "Developer mode", click "Load unpacked", select the `browser-extension` folder
+   - **Edge**: Go to `edge://extensions/`, enable "Developer mode", click "Load unpacked", select the `browser-extension` folder
+
+3. **Sign in and use**:
+   - Click the extension icon
+   - Sign in with your Scholarly account
+   - Navigate to a scholarship application form
+   - Click "Fill Form" to auto-fill the form
+
+For detailed instructions, see [browser-extension/README.md](./browser-extension/README.md)
+
 ## Scholarship Scraper
 
 The backend includes a scholarship scraper for ScholarshipsCanada.com.

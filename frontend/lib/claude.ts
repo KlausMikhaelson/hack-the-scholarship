@@ -14,6 +14,9 @@ function parseJSON(jsonString: string): any {
     cleaned = cleaned.replace(/^```\n?/, "").replace(/\n?```$/, "");
   }
   
+  // Attempt to remove trailing commas before closing braces/brackets
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+  
   // Try to find JSON object boundaries if there's extra text
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
@@ -23,8 +26,8 @@ function parseJSON(jsonString: string): any {
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("JSON parse error at position:", (error as any).message);
-    console.error("Raw string (first 2000 chars):", cleaned.substring(0, 2000));
+    console.error("JSON parse error:", error);
+    console.error("Malformed JSON string (first 500 chars):", cleaned.substring(0, 500));
     
     // Try a more robust approach: use a streaming JSON parser or manual extraction
     try {
@@ -51,7 +54,7 @@ function parseJSON(jsonString: string): any {
         // Try to parse explanation if found
         if (explanationMatch) {
           try {
-            result.explanation = JSON.parse(explanationMatch[1]);
+            result.explanation = JSON.parse(explanationMatch[1].replace(/,(\s*[}\]])/g, '$1'));
           } catch (e) {
             // Ignore explanation parse errors
           }
@@ -125,7 +128,7 @@ Weighted Criteria:
 {profileWeights}
 
 Provide JSON with:
-- scores: object with score for each criterion
+- scores: object with score, why it matters in one sentence and how the student meets this criterion in one sentence, for each criterion. The highest score must be above 30.
 - totalScore: weighted total score (0-100)
 - strongMatches: array of areas where student excels
 - weakMatches: array of areas needing improvement
@@ -154,11 +157,13 @@ Sample Student Essay:
 {sampleStudentEssay}
 
 Generate:
-1. A compelling essay that:
+1. A compelling essay according to essay requirements that:
    - Emphasizes the student's strengths matching scholarship values
    - Uses keywords and themes from winning essays
    - Follows patterns identified in successful applications
-   - Tells an authentic story
+   - Tells an authentic story 
+   - Uses student's writing style and tone from their sample essay
+   - Shows more and tells less
 
 2. A detailed explanation of strategic choices:
    - Which values were emphasized and why
@@ -173,7 +178,7 @@ Return JSON with:
 - valueAlignment: how essay maps to each weighted value (as a JSON object)
 - keywordUsage: list of strategic keywords used (as a JSON array)
 
-CRITICAL: The essay field must be a valid JSON string. Escape all quotes with \\", escape newlines with \\n, escape backslashes with \\\\.
+Do NOT use em dashes. CRITICAL: The essay field must be a valid JSON string. Escape all quotes with \\", escape newlines with \\n, escape backslashes with \\\\.
 Return ONLY valid JSON that can be parsed by JSON.parse(). Do not include any markdown formatting.
 `);
 

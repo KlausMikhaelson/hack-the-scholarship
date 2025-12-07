@@ -22,10 +22,34 @@ Browser extension for HackTheScholarship that auto-fills scholarship application
    - Make sure your frontend is running and accessible
 
 3. **Load Extension in Browser**:
-   - Open Chrome/Edge and go to `chrome://extensions/` or `edge://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked"
-   - Select the `browser-extension` folder
+
+   **For Google Chrome:**
+   - Open Chrome and navigate to `chrome://extensions/`
+   - Toggle "Developer mode" ON (switch in the top-right corner)
+   - Click the "Load unpacked" button
+   - Navigate to and select the `browser-extension` folder (the folder containing `manifest.json`)
+   - The extension should now appear in your extensions list
+   - Pin the extension to your toolbar for easy access (click the puzzle icon in Chrome toolbar, then pin)
+
+   **For Microsoft Edge:**
+   - Open Edge and navigate to `edge://extensions/`
+   - Toggle "Developer mode" ON (switch in the bottom-left corner)
+   - Click the "Load unpacked" button
+   - Navigate to and select the `browser-extension` folder (the folder containing `manifest.json`)
+   - The extension should now appear in your extensions list
+   - Pin the extension to your toolbar for easy access (click the extensions icon, then pin)
+
+   **For Firefox:**
+   - Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on..."
+   - Navigate to the `browser-extension` folder and select the `manifest.json` file
+   - Note: Firefox requires a different manifest format, so you may need to use Chrome/Edge for full compatibility
+
+   **Troubleshooting:**
+   - If you see errors, make sure you selected the correct folder (should contain `manifest.json`, `popup/`, `background/`, `content/` folders)
+   - If the extension doesn't load, check the browser console for errors
+   - Make sure all dependencies are installed (`npm install` completed successfully)
+   - For Chrome/Edge: Ensure "Developer mode" is enabled before clicking "Load unpacked"
 
 ## Usage
 
