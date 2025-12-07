@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
-import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
@@ -58,9 +58,9 @@ function formatStudentProfile(studentObj: any) {
 }
 
 // Initialize Claude model
-const model = new ChatAnthropic({
-  modelName: "claude-sonnet-4-20250514",
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY,
+const model = new ChatGoogleGenerativeAI({
+  model: "gemini-3-pro",
+  apiKey: process.env.GOOGLE_API_KEY,
 });
 
 // Define prompt templates
